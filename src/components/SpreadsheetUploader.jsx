@@ -4,7 +4,7 @@ import { parseSpreadsheetFile } from "../utils/spreadsheet";
 
 export default function SpreadsheetUploader({ onDataLoaded }) {
   const inputRef = useRef(null);
-  const [status, setStatus] = useState(null); // { type: 'success'|'error', message }
+  const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(false);
 
   async function handleFile(file) {
@@ -12,7 +12,7 @@ export default function SpreadsheetUploader({ onDataLoaded }) {
     setLoading(true);
     setStatus(null);
     try {
-      const rows = await parseSpreadsheetFile(file);
+      const rows = await parseSpreadsheetFile(file, "ISO-8859-1");
       onDataLoaded(rows);
       setStatus({ type: "success", message: `${rows.length} propostas importadas de "${file.name}".` });
     } catch (err) {

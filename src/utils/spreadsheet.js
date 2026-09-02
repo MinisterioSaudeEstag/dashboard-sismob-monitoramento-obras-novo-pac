@@ -1,7 +1,5 @@
 import * as XLSX from "xlsx";
 
-// Mapeia possíveis nomes de coluna (planilha do usuário) -> campo interno.
-// Aceita variações de acentuação/maiúsculas/espaços.
 const HEADER_MAP = {
   proposta: "proposta",
   "n da proposta": "proposta",
@@ -23,12 +21,25 @@ const HEADER_MAP = {
   "execucao fisica": "execucaoFisica",
   "data prevista de conclusao (sismob)": "dataPrevistaConclusao",
   "data prevista de conclusao": "dataPrevistaConclusao",
+
+  "quem fez o contato?": "quemFezContato",
+  "quem fez o contato": "quemFezContato",
+  "contato por": "quemFezContato",
+  "data do contato": "dataContato",
+  "execucao informada pelo ente (%)": "execucaoEnte",
+  "execucao informada pelo ente": "execucaoEnte",
+  "data/previsao de conclusao informada pelo ente": "conclusaoEnte",
+  "data de conclusao informada pelo ente": "conclusaoEnte",
+  "previsao de conclusao informada pelo ente": "conclusaoEnte",
+  "data/previsao de inauguracao informada pelo ente": "inauguracaoEnte",
+  "data de inauguracao informada pelo ente": "inauguracaoEnte",
+  "previsao de inauguracao informada pelo ente": "inauguracaoEnte",
 };
 
 function normalizeHeader(h) {
   return String(h)
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[\u0300-\u036f]/g, "") 
     .trim()
     .toLowerCase();
 }
@@ -49,10 +60,6 @@ function coerceNumber(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-/**
- * Lê um arquivo (.xlsx, .xls ou .csv) e retorna um array de objetos
- * normalizados para o formato interno usado pelo dashboard.
- */
 export async function parseSpreadsheetFile(file) {
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array", cellDates: false });
@@ -66,6 +73,14 @@ export async function parseSpreadsheetFile(file) {
 
   const rows = json.map((rawRow) => {
     const r = normalizeRow(rawRow);
+
+    const execEnteVal =
+      r.execucaoEnte !== undefined &&
+      r.execucaoEnte !== null &&
+      String(r.execucaoEnte).trim() !== ""
+        ? coerceNumber(r.execucaoEnte, "ND")
+        : "ND";
+
     return {
       proposta: String(r.proposta ?? "").trim(),
       anoRepasse: coerceNumber(r.anoRepasse, new Date().getFullYear()),
@@ -77,6 +92,12 @@ export async function parseSpreadsheetFile(file) {
       dataRepasseAno: coerceNumber(r.dataRepasseAno, new Date().getFullYear()),
       execucaoFisica: coerceNumber(r.execucaoFisica, 0),
       dataPrevistaConclusao: String(r.dataPrevistaConclusao ?? "").trim(),
+
+      quemFezContato: String(r.quemFezContato ?? "").trim() || "Não informado",
+      dataContato: String(r.dataContato ?? "").trim() || "ND",
+      execucaoEnte: execEnteVal,
+      conclusaoEnte: String(r.conclusaoEnte ?? "").trim() || "ND",
+      inauguracaoEnte: String(r.inauguracaoEnte ?? "").trim() || "ND",
     };
   });
 
@@ -90,10 +111,6 @@ export async function parseSpreadsheetFile(file) {
   return rows;
 }
 
-/**
- * Exporta um array de objetos (linhas da tabela filtrada) para um arquivo CSV
- * e dispara o download no navegador.
- */
 export function exportRowsToCSV(rows, filename = "sismob_propostas.csv") {
   const columns = [
     { key: "proposta", label: "PROPOSTA" },
@@ -106,6 +123,11 @@ export function exportRowsToCSV(rows, filename = "sismob_propostas.csv") {
     { key: "dataRepasseAno", label: "DATA DO REPASSE (ANO)" },
     { key: "execucaoFisica", label: "EXECUÇÃO FÍSICA (%) (SISMOB)" },
     { key: "dataPrevistaConclusao", label: "DATA PREVISTA DE CONCLUSÃO (SISMOB)" },
+    { key: "quemFezContato", label: "QUEM FEZ O CONTATO?" },
+    { key: "dataContato", label: "DATA DO CONTATO" },
+    { key: "execucaoEnte", label: "EXECUÇÃO INFORMADA PELO ENTE (%)" },
+    { key: "conclusaoEnte", label: "PREV. CONCLUSÃO ENTE" },
+    { key: "inauguracaoEnte", label: "PREV. INAUGURAÇÃO ENTE" },
   ];
 
   const aoa = [
@@ -115,7 +137,6 @@ export function exportRowsToCSV(rows, filename = "sismob_propostas.csv") {
 
   const worksheet = XLSX.utils.aoa_to_sheet(aoa);
   const csv = XLSX.utils.sheet_to_csv(worksheet);
-  // Adiciona BOM para acentuação correta ao abrir no Excel
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
