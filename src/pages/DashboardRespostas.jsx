@@ -1,16 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { Search, CalendarCheck } from 'lucide-react';
+import SpreadsheetUploader from '../components/SpreadsheetUploader';
 
-export default function DashboardRespostas({ dados }) {
+export default function DashboardRespostas({ dados, setDados }) {
   const [busca, setBusca] = useState('');
 
   const dadosFiltrados = useMemo(() => {
+    if (!dados || dados.length === 0) return [];
+
     return dados.filter(row => {
       const temContato = row.quemFezContato && row.quemFezContato !== 'Não informado' && row.quemFezContato !== 'ND';
       
       const termo = busca.toLowerCase();
-      const matchBusca = (row['Município Convenente'] || row.municipio || '').toLowerCase().includes(termo) || 
-                         (row.proposta || '').toLowerCase().includes(termo);
+      const matchBusca = String(row['Município Convenente'] || row.municipio || '').toLowerCase().includes(termo) || 
+                         String(row.proposta || '').toLowerCase().includes(termo);
       
       return temContato && matchBusca;
     });
@@ -31,12 +34,12 @@ export default function DashboardRespostas({ dados }) {
       }
     });
 
-    const mediaExecucao = qtdExecucaoValida > 0 ? (somaExecucaoEnte / qtdExecucaoValida).toFixed(1) : 0;
+    const mediaExecucao = qtdExecucaoValida > 0 ? (somaExecucaoEnte / qtdExecucaoValida).toFixed(1) : "0.0";
 
     return {
       totalRespostas: dadosFiltrados.length,
       municipiosAtendidos: totalMunicipios.size,
-      mediaExecucao: mediaExecucao.replace('.', ',')
+      mediaExecucao: String(mediaExecucao).replace('.', ',')
     };
   }, [dadosFiltrados]);
 
@@ -53,14 +56,18 @@ export default function DashboardRespostas({ dados }) {
           </p>
         </div>
         
-        <div className="search-bar">
-          <Search size={18} color="#F7941D" />
-          <input 
-            type="text" 
-            placeholder="Pesquisar por município ou proposta..." 
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
+          <div className="search-bar">
+            <Search size={18} color="#F7941D" />
+            <input 
+              type="text" 
+              placeholder="Pesquisar..." 
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </div>
+          
+          <SpreadsheetUploader onDataLoaded={setDados} />
         </div>
       </div>
 
@@ -96,7 +103,7 @@ export default function DashboardRespostas({ dados }) {
               {dadosFiltrados.length === 0 ? (
                 <tr>
                   <td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#999'}}>
-                    Nenhuma resposta encontrada. Preencha a coluna "Quem fez o contato?" na planilha.
+                    Nenhuma resposta encontrada. Importe a planilha de feedback e verifique os dados.
                   </td>
                 </tr>
               ) : (

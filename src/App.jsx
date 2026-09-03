@@ -48,7 +48,6 @@ const HeaderNavegacao = () => {
           MAPA DE OBRAS
         </Link>
 
-        {/* Link de Respostas agora padronizado com o design de pílula */}
         <Link 
           to="/respostas" 
           style={{
@@ -70,6 +69,9 @@ const HeaderNavegacao = () => {
 
 function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
+  
+  const [dadosRespostas, setDadosRespostas] = useState([]);
+
   const [options, setOptions] = useState({
     municipios: [],
     prioridades: ['Alta', 'Média', 'Baixa'],
@@ -103,10 +105,14 @@ function App() {
               />
             } 
           />
+          
           <Route 
             path="/respostas" 
             element={
-              <DashboardRespostas dados={dadosPlanilha} />
+              <DashboardRespostas 
+                dados={dadosRespostas} 
+                setDados={setDadosRespostas} 
+              />
             } 
           />
         </Routes>
