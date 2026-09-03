@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, Home, BarChart2, MapPin, Calendar, UploadCloud, HelpCircle, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Map, MessageSquare } from 'lucide-react';
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
 import DashboardRespostas from './pages/DashboardRespostas';
@@ -48,8 +48,20 @@ const HeaderNavegacao = () => {
           MAPA DE OBRAS
         </Link>
 
-        <Link to="/respostas" className={`nav-link ${location.pathname === '/respostas' ? 'active' : ''}`}>
-            <MessageSquare size={20} /> Respostas
+        {/* Link de Respostas agora padronizado com o design de pílula */}
+        <Link 
+          to="/respostas" 
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 24px', borderRadius: '40px', textDecoration: 'none',
+            fontWeight: '600', fontSize: '14px', transition: 'all 0.3s',
+            ...(location.pathname === '/respostas' 
+              ? { backgroundColor: '#FFF3E0', color: '#E67E22' } 
+              : { backgroundColor: 'transparent', color: '#666' })
+          }}
+        >
+          <MessageSquare size={18} />
+          RESPOSTAS
         </Link>
       </nav>
     </header>
@@ -91,8 +103,12 @@ function App() {
               />
             } 
           />
-
-          <Route path="/respostas" element={<DashboardRespostas dados={dadosPlanilha} />} />
+          <Route 
+            path="/respostas" 
+            element={
+              <DashboardRespostas dados={dadosPlanilha} />
+            } 
+          />
         </Routes>
       </div>
     </BrowserRouter>
