@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Search, MessageSquare, Building2, TrendingUp, CalendarCheck } from 'lucide-react';
+import { Search, CalendarCheck } from 'lucide-react';
 
 export default function DashboardRespostas({ dados }) {
   const [busca, setBusca] = useState('');
 
   const dadosFiltrados = useMemo(() => {
     return dados.filter(row => {
-      const temContato = row.quemFezContato !== 'Não informado' && row.quemFezContato !== 'ND';
+      const temContato = row.quemFezContato && row.quemFezContato !== 'Não informado' && row.quemFezContato !== 'ND';
       
       const termo = busca.toLowerCase();
       const matchBusca = (row['Município Convenente'] || row.municipio || '').toLowerCase().includes(termo) || 
@@ -36,20 +36,25 @@ export default function DashboardRespostas({ dados }) {
     return {
       totalRespostas: dadosFiltrados.length,
       municipiosAtendidos: totalMunicipios.size,
-      mediaExecucao
+      mediaExecucao: mediaExecucao.replace('.', ',')
     };
   }, [dadosFiltrados]);
 
   return (
-    <div className="respostas-container">
+    <div className="page-container">
       
       <div className="respostas-header">
         <div>
-          <h2>Feedback e Acompanhamento Local</h2>
-          <p>Dados informados diretamente pelas entidades convenentes através de formulário.</p>
+          <h2 style={{ fontSize: '20px', color: '#002B5E', marginBottom: '5px' }}>
+            Feedback e Acompanhamento Local
+          </h2>
+          <p style={{ fontSize: '13px', color: '#666' }}>
+            Dados informados diretamente pelas entidades convenentes através de formulário.
+          </p>
         </div>
+        
         <div className="search-bar">
-          <Search size={18} color="#999" />
+          <Search size={18} color="#F7941D" />
           <input 
             type="text" 
             placeholder="Pesquisar por município ou proposta..." 
@@ -59,116 +64,91 @@ export default function DashboardRespostas({ dados }) {
         </div>
       </div>
 
-      <div className="prazos-kpis">
-        <div className="prazos-kpi-card" style={{ borderLeftColor: '#0078D4' }}>
-          <div className="prazos-kpi-icon" style={{ background: '#e3f2fd', color: '#0078D4' }}>
-            <MessageSquare size={24} />
-          </div>
-          <div className="prazos-kpi-content">
-            <h4>Formulários</h4>
-            <p>Total de respostas registradas</p>
-            <strong>{kpis.totalRespostas} <span>propostas</span></strong>
-          </div>
+      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className="kpi-card">
+          <div className="kpi-header">Formulários Respondidos</div>
+          <div className="kpi-body">{kpis.totalRespostas}</div>
         </div>
-        
-        <div className="prazos-kpi-card" style={{ borderLeftColor: '#2CA02C' }}>
-          <div className="prazos-kpi-icon" style={{ background: '#e8f5e9', color: '#2CA02C' }}>
-            <Building2 size={24} />
-          </div>
-          <div className="prazos-kpi-content">
-            <h4>Municípios</h4>
-            <p>Prefeituras/Entidades envolvidas</p>
-            <strong>{kpis.municipiosAtendidos} <span>municípios</span></strong>
-          </div>
+        <div className="kpi-card">
+          <div className="kpi-header">Municípios Atendidos</div>
+          <div className="kpi-body">{kpis.municipiosAtendidos}</div>
         </div>
-
-        <div className="prazos-kpi-card" style={{ borderLeftColor: '#F7941D' }}>
-          <div className="prazos-kpi-icon" style={{ background: '#fff3e0', color: '#F7941D' }}>
-            <TrendingUp size={24} />
-          </div>
-          <div className="prazos-kpi-content">
-            <h4>Média de Execução</h4>
-            <p>Execução média informada (Local)</p>
-            <strong>{kpis.mediaExecucao}%</strong>
-          </div>
+        <div className="kpi-card">
+          <div className="kpi-header">Média de Execução (Local)</div>
+          <div className="kpi-body">{kpis.mediaExecucao}%</div>
         </div>
       </div>
 
-      <div className="table-card">
-        <table className="respostas-table">
-          <thead>
-            <tr>
-              <th>Proposta / Município</th>
-              <th>Componente / Porte</th>
-              <th>Contato (Quem / Data)</th>
-              <th>Execução Obras</th>
-              <th>Previsões (Ente)</th>
-              <th>Observações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dadosFiltrados.length === 0 ? (
+      <div className="chart-box" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="respostas-table">
+            <thead>
               <tr>
-                <td colSpan="6" style={{textAlign: 'center', padding: '30px', color: '#999'}}>
-                  Nenhuma resposta encontrada. Verifique se a planilha possui os dados de contato preenchidos.
-                </td>
+                <th>Proposta / Município</th>
+                <th>Componente / Porte</th>
+                <th>Contato (Quem / Data)</th>
+                <th>Execução Obras</th>
+                <th>Previsões (Ente)</th>
+                <th>Observações</th>
               </tr>
-            ) : (
-              dadosFiltrados.map((item, index) => (
-                <tr key={index}>
-                  
-                  <td>
-                    <div className="stack-text">
-                      <strong>{item.proposta}</strong>
-                      <span>{item['Município Convenente'] || item.municipio}</span>
-                    </div>
+            </thead>
+            <tbody>
+              {dadosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#999'}}>
+                    Nenhuma resposta encontrada. Preencha a coluna "Quem fez o contato?" na planilha.
                   </td>
-                  
-                  <td>
-                    <div className="stack-text">
-                      <strong>{item.componente}</strong>
-                      <span>{item.porte || 'Porte não informado'}</span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div className="stack-text">
-                      <strong>{item.quemFezContato}</strong>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                        <CalendarCheck size={12} color="#666" /> {item.dataContato}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div className="stack-text">
-                      <div><span className="exec-badge badge-sismob">SISMOB: {item.execucaoFisica}%</span></div>
-                      <div>
-                        <span className="exec-badge badge-ente">
-                          ENTE: {item.execucaoEnte !== 'ND' ? `${item.execucaoEnte}%` : 'ND'}
+                </tr>
+              ) : (
+                dadosFiltrados.map((item, index) => (
+                  <tr key={index}>
+                    <td>
+                      <div className="stack-text">
+                        <strong>{item.proposta}</strong>
+                        <span>{item['Município Convenente'] || item.municipio}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stack-text">
+                        <strong>{item.componente}</strong>
+                        <span>{item.porte || 'Porte não informado'}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stack-text">
+                        <strong>{item.quemFezContato}</strong>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <CalendarCheck size={12} color="#666" /> {item.dataContato}
                         </span>
                       </div>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div className="stack-text">
-                      <span><strong>Conclusão:</strong> {item.conclusaoEnte}</span>
-                      <span><strong>Inauguração:</strong> {item.inauguracaoEnte}</span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div className="obs-text">
-                      {item.observacoes || <span style={{color: '#ccc'}}>Sem observações</span>}
-                    </div>
-                  </td>
-
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </td>
+                    <td>
+                      <div className="stack-text">
+                        <div><span className="exec-badge badge-sismob">SISMOB: {item.execucaoFisica}%</span></div>
+                        <div>
+                          <span className="exec-badge badge-ente">
+                            ENTE: {item.execucaoEnte !== 'ND' ? `${item.execucaoEnte}%` : 'ND'}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="stack-text">
+                        <span><strong>Conclusão:</strong> {item.conclusaoEnte}</span>
+                        <span><strong>Inauguração:</strong> {item.inauguracaoEnte}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="obs-text">
+                        {item.observacoes || <span style={{color: '#ccc'}}>Sem observações</span>}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>
