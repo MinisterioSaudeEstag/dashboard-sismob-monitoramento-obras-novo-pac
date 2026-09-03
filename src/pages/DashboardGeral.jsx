@@ -97,14 +97,7 @@ export default function DashboardGeral({ dadosPlanilha, setDadosPlanilha, option
           </div>
 
           <div className="header-actions">
-            <SpreadsheetUploader onDataLoaded={handleDataLoaded} />
-            <div className="last-update-badge">
-              <span className="last-update-label">Última atualização</span>
-              <span className="last-update-value">
-                <CalendarClock size={14} />
-                {formatTimestamp(lastUpdated)}
-              </span>
-            </div>
+           <SpreadsheetUploader onDataLoaded={setDadosPlanilha} />
           </div>
         </header>
 
