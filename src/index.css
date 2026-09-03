@@ -872,3 +872,87 @@ tbody tr:hover {
     justify-content: center;
   }
 }
+
+.respostas-container {
+  padding: 20px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: calc(100vh - 85px);
+  overflow-y: auto;
+}
+.respostas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.respostas-header h2 { font-size: 20px; color: #002B5E; margin-bottom: 5px; }
+.respostas-header p { font-size: 13px; color: #666; }
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 15px;
+  width: 320px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.search-bar input {
+  border: none;
+  outline: none;
+  margin-left: 10px;
+  width: 100%;
+  font-size: 13px;
+  color: #333;
+}
+
+.table-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  overflow-x: auto;
+}
+.respostas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.respostas-table th {
+  background: #004b87;
+  color: #fff;
+  padding: 12px 15px;
+  text-align: left;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.respostas-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #444;
+  vertical-align: top;
+}
+.respostas-table tr:hover { background: #f9fbff; }
+
+.stack-text { display: flex; flex-direction: column; gap: 3px; }
+.stack-text strong { color: #002B5E; font-size: 13px; }
+.stack-text span { color: #666; font-size: 11px; }
+
+.exec-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.badge-sismob { background: #e3f2fd; color: #1565c0; }
+.badge-ente { background: #e8f5e9; color: #2e7d32; }
+
+.obs-text {
+  max-width: 250px;
+  white-space: pre-wrap;
+  color: #555;
+  font-style: italic;
+}

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map } from 'lucide-react';
+import { LayoutDashboard, Map, Home, BarChart2, MapPin, Calendar, UploadCloud, HelpCircle, MessageSquare } from 'lucide-react';
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
+import DashboardRespostas from './pages/DashboardRespostas';
 import './index.css';
 
 const HeaderNavegacao = () => {
@@ -46,6 +47,10 @@ const HeaderNavegacao = () => {
           <Map size={18} />
           MAPA DE OBRAS
         </Link>
+
+        <Link to="/respostas" className={`nav-link ${location.pathname === '/respostas' ? 'active' : ''}`}>
+            <MessageSquare size={20} /> Respostas
+        </Link>
       </nav>
     </header>
   );
@@ -86,6 +91,8 @@ function App() {
               />
             } 
           />
+
+          <Route path="/respostas" element={<DashboardRespostas dados={dadosPlanilha} />} />
         </Routes>
       </div>
     </BrowserRouter>
