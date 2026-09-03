@@ -873,18 +873,24 @@ tbody tr:hover {
   }
 }
 
+/* =========================================
+   PAINEL DE RESPOSTAS (MUNICÍPIOS)
+   ========================================= */
 .respostas-container {
   padding: 20px 30px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  height: calc(100vh - 85px);
-  overflow-y: auto;
+  background-color: #f4f7fc; 
+  min-height: calc(100vh - 85px);
 }
+
 .respostas-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 .respostas-header h2 { font-size: 20px; color: #002B5E; margin-bottom: 5px; }
 .respostas-header p { font-size: 13px; color: #666; }
@@ -897,6 +903,7 @@ tbody tr:hover {
   border-radius: 6px;
   padding: 8px 15px;
   width: 320px;
+  max-width: 100%;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
 .search-bar input {
@@ -907,6 +914,36 @@ tbody tr:hover {
   font-size: 13px;
   color: #333;
 }
+
+.prazos-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+.prazos-kpi-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-left: 5px solid;
+}
+.prazos-kpi-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.prazos-kpi-content { display: flex; flex-direction: column; }
+.prazos-kpi-content h4 { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 2px;}
+.prazos-kpi-content p { font-size: 11px; color: #666; line-height: 1.2; margin-bottom: 8px; }
+.prazos-kpi-content strong { font-size: 22px; color: #002B5E; }
+.prazos-kpi-content span { font-size: 11px; color: #999; font-weight: normal; margin-left: 4px; }
 
 .table-card {
   background: #fff;
@@ -947,12 +984,13 @@ tbody tr:hover {
   font-weight: 700;
   margin-top: 4px;
 }
-.badge-sismob { background: #e3f2fd; color: #1565c0; }
-.badge-ente { background: #e8f5e9; color: #2e7d32; }
+.badge-sismob { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+.badge-ente { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
 
 .obs-text {
-  max-width: 250px;
+  max-width: 280px;
   white-space: pre-wrap;
   color: #555;
   font-style: italic;
+  line-height: 1.4;
 }
