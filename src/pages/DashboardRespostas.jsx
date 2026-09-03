@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, CalendarCheck } from 'lucide-react';
+import { Search, CalendarCheck, MessageSquare, MapPin, TrendingUp } from 'lucide-react';
 import SpreadsheetUploader from '../components/SpreadsheetUploader';
 
 export default function DashboardRespostas({ dados, setDados }) {
@@ -44,51 +44,63 @@ export default function DashboardRespostas({ dados, setDados }) {
   }, [dadosFiltrados]);
 
   return (
-    <div className="page-container">
+    <div className="sismob-page-container">
       
-      <div className="respostas-header">
-        <div>
-          <h2 style={{ fontSize: '20px', color: '#002B5E', marginBottom: '5px' }}>
-            Feedback e Acompanhamento Local
-          </h2>
-          <p style={{ fontSize: '13px', color: '#666' }}>
-            Dados informados diretamente pelas entidades convenentes através de formulário.
-          </p>
+      <div className="sismob-header">
+        <div className="sismob-title-group">
+          <h2>Feedback e Acompanhamento Local</h2>
+          <p>Dados informados diretamente pelas entidades convenentes através de formulário.</p>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-          <div className="search-bar">
-            <Search size={18} color="#F7941D" />
+        <div className="sismob-actions-group">
+          <div className="sismob-search-bar">
+            <Search size={18} color="#999" />
             <input 
               type="text" 
-              placeholder="Pesquisar..." 
+              placeholder="Pesquisar por município..." 
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
           </div>
           
-          <SpreadsheetUploader onDataLoaded={setDados} />
+          <div className="sismob-upload-wrapper">
+            <SpreadsheetUploader onDataLoaded={setDados} />
+          </div>
         </div>
       </div>
 
-      <div className="kpi-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <div className="kpi-card">
-          <div className="kpi-header">Formulários Respondidos</div>
-          <div className="kpi-body">{kpis.totalRespostas}</div>
+      <div className="sismob-kpi-grid">
+        <div className="sismob-kpi-card">
+          <div className="sismob-kpi-title">Formulários Respondidos</div>
+          <div className="sismob-kpi-body">
+            <div className="sismob-kpi-icon" style={{ color: '#F7941D' }}><MessageSquare size={28} /></div>
+            <div className="sismob-kpi-value">{kpis.totalRespostas}</div>
+          </div>
+          <div className="sismob-kpi-footer">Total de respostas válidas</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-header">Municípios Atendidos</div>
-          <div className="kpi-body">{kpis.municipiosAtendidos}</div>
+
+        <div className="sismob-kpi-card">
+          <div className="sismob-kpi-title">Municípios Atendidos</div>
+          <div className="sismob-kpi-body">
+            <div className="sismob-kpi-icon" style={{ color: '#F7941D' }}><MapPin size={28} /></div>
+            <div className="sismob-kpi-value">{kpis.municipiosAtendidos}</div>
+          </div>
+          <div className="sismob-kpi-footer">Prefeituras envolvidas</div>
         </div>
-        <div className="kpi-card">
-          <div className="kpi-header">Média de Execução (Local)</div>
-          <div className="kpi-body">{kpis.mediaExecucao}%</div>
+
+        <div className="sismob-kpi-card">
+          <div className="sismob-kpi-title">Média de Execução (Local)</div>
+          <div className="sismob-kpi-body">
+            <div className="sismob-kpi-icon" style={{ color: '#F7941D' }}><TrendingUp size={28} /></div>
+            <div className="sismob-kpi-value">{kpis.mediaExecucao}%</div>
+          </div>
+          <div className="sismob-kpi-footer">Execução física informada</div>
         </div>
       </div>
 
-      <div className="chart-box" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="respostas-table">
+      <div className="sismob-table-container">
+        <div className="sismob-table-wrapper">
+          <table className="sismob-table">
             <thead>
               <tr>
                 <th>Proposta / Município</th>
@@ -102,7 +114,7 @@ export default function DashboardRespostas({ dados, setDados }) {
             <tbody>
               {dadosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="6" style={{textAlign: 'center', padding: '40px', color: '#999'}}>
+                  <td colSpan="6" className="sismob-table-empty">
                     Nenhuma resposta encontrada. Importe a planilha de feedback e verifique os dados.
                   </td>
                 </tr>
@@ -124,18 +136,20 @@ export default function DashboardRespostas({ dados, setDados }) {
                     <td>
                       <div className="stack-text">
                         <strong>{item.quemFezContato}</strong>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                          <CalendarCheck size={12} color="#666" /> {item.dataContato}
+                        <span className="flex-icon-text">
+                          <CalendarCheck size={12} color="#F7941D" /> {item.dataContato}
                         </span>
                       </div>
                     </td>
                     <td>
                       <div className="stack-text">
-                        <div><span className="exec-badge badge-sismob">SISMOB: {item.execucaoFisica}%</span></div>
-                        <div>
-                          <span className="exec-badge badge-ente">
-                            ENTE: {item.execucaoEnte !== 'ND' ? `${item.execucaoEnte}%` : 'ND'}
-                          </span>
+                        <div className="exec-badge-modern">
+                          <span className="label">SISMOB</span>
+                          <span className="value">{item.execucaoFisica}%</span>
+                        </div>
+                        <div className="exec-badge-modern orange">
+                          <span className="label">ENTE</span>
+                          <span className="value">{item.execucaoEnte !== 'ND' ? `${item.execucaoEnte}%` : 'ND'}</span>
                         </div>
                       </div>
                     </td>
@@ -147,7 +161,7 @@ export default function DashboardRespostas({ dados, setDados }) {
                     </td>
                     <td>
                       <div className="obs-text">
-                        {item.observacoes || <span style={{color: '#ccc'}}>Sem observações</span>}
+                        {item.observacoes || <span className="empty-obs">Sem observações</span>}
                       </div>
                     </td>
                   </tr>

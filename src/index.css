@@ -874,33 +874,58 @@ tbody tr:hover {
 }
 
 /* =========================================
-   PAINEL DE RESPOSTAS (FEEDBACK LOCAL)
+   NOVO PADRÃO VISUAL SISMOB (Respostas)
    ========================================= */
-.respostas-header {
+.sismob-page-container {
+  padding: 30px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 85px);
+}
+
+.sismob-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 5px;
+  gap: 20px;
+}
+.sismob-title-group h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 6px;
+}
+.sismob-title-group p {
+  font-size: 14px;
+  color: #777;
 }
 
-.search-bar {
+.sismob-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.sismob-search-bar {
   display: flex;
   align-items: center;
   background: #fff;
   border: 1px solid #e0e5eb;
-  border-radius: 6px;
-  padding: 10px 15px;
-  width: 350px;
-  max-width: 100%;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-  transition: border-color 0.3s;
+  border-radius: 8px;
+  padding: 10px 16px;
+  width: 320px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
 }
-.search-bar:focus-within {
+.sismob-search-bar:focus-within {
   border-color: #F7941D;
+  box-shadow: 0 0 0 3px rgba(247, 148, 29, 0.1);
 }
-.search-bar input {
+.sismob-search-bar input {
   border: none;
   outline: none;
   margin-left: 10px;
@@ -909,47 +934,147 @@ tbody tr:hover {
   color: #333;
 }
 
-.respostas-table {
+.sismob-upload-wrapper .btn-upload {
+  background-color: #F7941D !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 11px 20px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 10px rgba(247, 148, 29, 0.2) !important;
+  transition: background 0.3s !important;
+}
+.sismob-upload-wrapper .btn-upload:hover {
+  background-color: #e08316 !important;
+}
+
+.sismob-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+.sismob-kpi-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+}
+.sismob-kpi-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 15px;
+}
+.sismob-kpi-body {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 8px;
+}
+.sismob-kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+  line-height: 1;
+}
+.sismob-kpi-footer {
+  font-size: 12px;
+  color: #999;
+}
+
+.sismob-table-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+.sismob-table-wrapper {
+  overflow-x: auto;
+}
+.sismob-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
 }
-.respostas-table th {
-  background: #004b87;
-  color: #fff;
-  padding: 14px 15px;
+.sismob-table th {
+  background: #fdfdfd;
+  color: #555;
+  padding: 16px 20px;
   text-align: left;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #eaeaea;
   white-space: nowrap;
 }
-.respostas-table td {
-  padding: 15px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #444;
+.sismob-table td {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f5;
   vertical-align: top;
 }
-.respostas-table tr:hover { background: #f9fbff; }
+.sismob-table tr:hover {
+  background-color: #fafbfc;
+}
+.sismob-table-empty {
+  text-align: center;
+  padding: 60px 20px !important;
+  color: #888;
+  font-size: 14px;
+}
 
-.stack-text { display: flex; flex-direction: column; gap: 4px; }
-.stack-text strong { color: #002B5E; font-size: 13px; }
+.stack-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.stack-text strong { color: #222; font-size: 13px; }
 .stack-text span { color: #666; font-size: 12px; }
 
-.exec-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  margin-top: 4px;
+.flex-icon-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
 }
-.badge-sismob { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
-.badge-ente { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+
+.exec-badge-modern {
+  display: inline-flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 11px;
+  margin-top: 4px;
+  width: fit-content;
+}
+.exec-badge-modern .label {
+  background: #eee;
+  padding: 3px 6px;
+  font-weight: 700;
+  color: #555;
+}
+.exec-badge-modern .value {
+  padding: 3px 8px;
+  font-weight: 700;
+  color: #333;
+}
+.exec-badge-modern.orange { border-color: #F7941D; }
+.exec-badge-modern.orange .label { background: #fff3e0; color: #d35400; }
+.exec-badge-modern.orange .value { color: #d35400; }
 
 .obs-text {
-  min-width: 200px;
+  min-width: 220px;
   white-space: pre-wrap;
   color: #555;
-  font-style: italic;
-  line-height: 1.4;
+  line-height: 1.5;
   font-size: 12px;
 }
+.empty-obs { color: #ccc; font-style: italic; }
