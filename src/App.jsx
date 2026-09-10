@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map, MessageSquare, Menu, X } from 'lucide-react';
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
 import DashboardRespostas from './pages/DashboardRespostas';
 import { supabase } from './utils/supabase';
+import { processExcelFile } from './utils/dataProcessor'; 
 import './index.css';
 
 const HeaderNavegacao = () => {
