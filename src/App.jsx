@@ -128,7 +128,7 @@ useEffect(() => {
         .from('sismob_nuvem')
         .select('*')
         .eq('id', 1)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Erro ao buscar dados:", error);
