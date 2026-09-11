@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Map, MessageSquare, Menu, X } from 'lucide-react';
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
 import DashboardRespostas from './pages/DashboardRespostas';
 import { supabase } from './utils/supabase';
-import { processExcelFile } from './utils/dataProcessor'; 
 import './index.css';
 
 const HeaderNavegacao = () => {
@@ -111,8 +110,8 @@ const MobileBottomNav = () => {
 function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
   const [dadosRespostas, setDadosRespostas] = useState([]);
+  const [dataAtualizacao, setDataAtualizacao] = useState(null); 
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
-  const fileInputRef = useRef(null);  
 
   const [options, setOptions] = useState({
     municipios: [],
@@ -122,7 +121,7 @@ function App() {
     portes: []
   });
 
-useEffect(() => {
+  useEffect(() => {
     const buscarDadosNuvem = async () => {
       const { data, error } = await supabase
         .from('sismob_nuvem')
@@ -170,32 +169,35 @@ useEffect(() => {
     };
   }, []);
 
-  const handleImport = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    processExcelFile(file, async (jsonDados) => {
-      setDadosPlanilha(jsonDados);
-      
-      const agora = new Date();
-      const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
-      setDataAtualizacao(dataFormatada);
-
-      const { error } = await supabase
-        .from('sismob_nuvem')
-        .update({ 
-          dados_geral: jsonDados,
-          data_atualizacao: dataFormatada 
-        })
-        .eq('id', 1);
-
-      if (error) {
-        alert("Erro ao salvar na nuvem. Verifique a conexão.");
-        console.error(error);
-      }
-    });
+  const salvarPlanilhaGeralNuvem = async (jsonDados) => {
+    setDadosPlanilha(jsonDados); 
     
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    const agora = new Date();
+    const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    setDataAtualizacao(dataFormatada);
+
+    const { error } = await supabase
+      .from('sismob_nuvem')
+      .update({ 
+        dados_geral: jsonDados,
+        data_atualizacao: dataFormatada 
+      })
+      .eq('id', 1);
+
+    if (error) console.error("Erro ao salvar planilha geral no Supabase:", error);
+  };
+
+  const salvarPlanilhaRespostasNuvem = async (jsonDados) => {
+    setDadosRespostas(jsonDados); 
+
+    const { error } = await supabase
+      .from('sismob_nuvem')
+      .update({ 
+        dados_respostas: jsonDados 
+      })
+      .eq('id', 1);
+
+    if (error) console.error("Erro ao salvar respostas no Supabase:", error);
   };
 
   return (
@@ -214,7 +216,7 @@ useEffect(() => {
               element={
                 <DashboardGeral 
                   dadosPlanilha={dadosPlanilha} 
-                  setDadosPlanilha={setDadosPlanilha}
+                  setDadosPlanilha={salvarPlanilhaGeralNuvem} 
                   options={options}
                   setOptions={setOptions}
                 />
@@ -234,7 +236,7 @@ useEffect(() => {
               element={
                 <DashboardRespostas 
                   dados={dadosRespostas} 
-                  setDados={setDadosRespostas} 
+                  setDados={salvarPlanilhaRespostasNuvem} 
                 />
               } 
             />
