@@ -1,28 +1,39 @@
 import React, { useState, useMemo } from 'react';
-import { MessageSquare, Search, UploadCloud, Calendar, User, FileText } from 'lucide-react';
+import { MessageSquare, Search, Calendar, User, MapPin } from 'lucide-react';
 
-export default function DashboardRespostas({ dados = [], setDados }) {
+export default function DashboardRespostas({ dados = [] }) {
   const [busca, setBusca] = useState('');
 
   const formatarDataBR = (valorData) => {
     if (!valorData) return "Data não informada";
     
-    if (typeof valorData === 'number') {
-      const dataBase = new Date(1899, 11, 30);
-      dataBase.setDate(dataBase.getDate() + valorData);
-      return dataBase.toLocaleDateString('pt-BR');
-    }
+    try {
+      if (typeof valorData === 'number') {
+        const dataBase = new Date(1899, 11, 30);
+        dataBase.setDate(dataBase.getDate() + valorData);
+        return dataBase.toLocaleDateString('pt-BR');
+      }
 
-    const dataObj = new Date(valorData);
-    if (!isNaN(dataObj.getTime())) {
-      return dataObj.toLocaleDateString('pt-BR');
-    }
+      if (valorData instanceof Date) {
+        return valorData.toLocaleDateString('pt-BR');
+      }
 
-    return String(valorData);
+      const stringData = String(valorData).trim();
+      if (!stringData || stringData === 'NaT' || stringData === 'NaN') return "Data não informada";
+
+      const dataObj = new Date(stringData);
+      if (!isNaN(dataObj.getTime())) {
+        return dataObj.toLocaleDateString('pt-BR');
+      }
+
+      return stringData;
+    } catch (e) {
+      return "Data não informada";
+    }
   };
 
   const dadosFormatados = useMemo(() => {
-    if (!dados || !dados.length) return [];
+    if (!dados || !Array.isArray(dados) || !dados.length) return [];
 
     return dados.map((item) => {
       const execBruta = item['Execução informada pelo ente (%)'];
@@ -38,9 +49,9 @@ export default function DashboardRespostas({ dados = [], setDados }) {
       }
 
       const porteOriginal = item['Porte'] || item['porte'];
-      const porteTexto = porteOriginal && String(porteOriginal).trim() !== "" 
-        ? `Porte: ${porteOriginal}` 
-        : "Porte não informado";
+      const porteTexto = porteOriginal && String(porteOriginal).trim() !== "" && String(porteOriginal) !== "nan"
+        ? String(porteOriginal).trim()
+        : "";
 
       return {
         ...item,
@@ -49,11 +60,9 @@ export default function DashboardRespostas({ dados = [], setDados }) {
         componente: item['Componente'] || item['componente'] || 'Componente não informado',
         porteTexto: porteTexto,
         quemContato: item['Quem fez o contato?'] || item['quemContato'] || 'Não informado',
-
         dataContatoFormatada: formatarDataBR(item['Data do contato']),
         execucaoFormatada: execucaoPercentual,
         valorExecucaoNum: valorNumericoExec,
-
         conclusaoFormatada: formatarDataBR(item['Data/Previsão de conclusão informada pelo ente']),
         inauguracaoFormatada: formatarDataBR(item['Data/Previsão de inauguração informada pelo ente']),
         observacoes: item['Observações e problemas'] || item['observacoes'] || 'Sem observações'
@@ -173,7 +182,9 @@ export default function DashboardRespostas({ dados = [], setDados }) {
 
                     <td style={{ padding: '14px 16px' }}>
                       <span style={{ display: 'block', color: '#333', fontWeight: '500' }}>{item.componente}</span>
-                      <span style={{ color: '#888', fontSize: '11px', fontStyle: 'italic' }}>{item.porteTexto}</span>
+                      {item.porteTexto && (
+                        <span style={{ color: '#888', fontSize: '11px', fontStyle: 'italic' }}>Porte: {item.porteTexto}</span>
+                      )}
                     </td>
 
                     <td style={{ padding: '14px 16px' }}>
