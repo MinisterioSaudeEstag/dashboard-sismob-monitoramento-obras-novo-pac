@@ -8,9 +8,39 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
   const [filtros, setFiltros] = useState(DEFAULT_FILTERS);
   const [municipioSelecionado, setMunicipioSelecionado] = useState(null);
 
+  const dadosProcessados = useMemo(() => {
+    if (!dadosPlanilha || !dadosPlanilha.length) return [];
+
+    return dadosPlanilha.map(obra => {
+      const valorBruto = obra['Execução informada pelo ente (%)'];
+      let execucaoNum = 0;
+      let execucaoFormatada = "ND";
+
+      if (valorBruto !== undefined && valorBruto !== null && valorBruto !== "") {
+        const num = Number(valorBruto);
+        if (!isNaN(num)) {
+          execucaoNum = num <= 1 ? num * 100 : num;
+          execucaoFormatada = `${Math.round(execucaoNum)}%`;
+        }
+      }
+
+      return {
+        ...obra,
+        execucaoEnte: execucaoFormatada,
+        _execucaoValorNumerico: execucaoNum, 
+        nomeUnidade: obra['Nome da unidade'] || 'Unidade sem nome',
+        situacao: obra['Situação no SISMOB'] || obra['Situação'] || 'Sem situação',
+        quemFezContato: obra['Quem fez o contato?'] || 'Não informado',
+        dataContato: obra['Data do contato'] ? String(obra['Data do contato']).split('T')[0] : 'Não informada',
+        conclusaoEnte: obra['Data/Previsão de conclusão informada pelo ente'] ? String(obra['Data/Previsão de conclusão informada pelo ente']).split('T')[0] : 'Não informada',
+        inauguracaoEnte: obra['Data/Previsão de inauguração informada pelo ente'] ? String(obra['Data/Previsão de inauguração informada pelo ente']).split('T')[0] : 'Não informada',
+      };
+    });
+  }, [dadosPlanilha]);
+
   const dadosFiltrados = useMemo(() => {
-    return applyFilters(dadosPlanilha, filtros);
-  }, [dadosPlanilha, filtros]);
+    return applyFilters(dadosProcessados, filtros);
+  }, [dadosProcessados, filtros]);
 
   const dadosObrasAgrupados = useMemo(() => {
     return prepararDadosParaMapa(dadosFiltrados);
@@ -23,12 +53,26 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
     const somaDias = dadosFiltrados.reduce((acc, r) => acc + (Number(r.diasSemMonitoramento) || 0), 0);
     const diasMedios = totalObras > 0 ? Math.round(somaDias / totalObras) : 0;
 
+    const obrasComExecucao = dadosFiltrados.filter(r => r._execucaoValorNumerico > 0 || r.execucaoEnte !== "ND");
+    let conclusaoMediaGeral = "ND";
+    
+    if (obrasComExecucao.length > 0) {
+      const somaExecucao = obrasComExecucao.reduce((acc, r) => acc + r._execucaoValorNumerico, 0);
+      conclusaoMediaGeral = `${Math.round(somaExecucao / obrasComExecucao.length)}%`;
+    }
+
     return {
       totalMunicipios,
       totalObras,
+      conclusaoMediaGeral,
       diasMediosSemMonitoramento: diasMedios,
     };
   }, [dadosFiltrados, dadosObrasAgrupados]);
+
+  const municipioAtualNoMapa = useMemo(() => {
+    if (!municipioSelecionado) return null;
+    return dadosObrasAgrupados.find(m => m.nome === municipioSelecionado.nome) || null;
+  }, [dadosObrasAgrupados, municipioSelecionado]);
 
   return (
     <div className="mapa-obras-container" style={{ display: 'flex', gap: '20px', padding: '20px' }}>
@@ -75,9 +119,9 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
           </div>
 
           <div className="resumo-item" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-            <PieChart size={24} color="#ccc" />
+            <PieChart size={24} color="#E67E22" />
             <div>
-              <strong style={{ fontSize: '18px', display: 'block', color: '#999' }}>ND</strong>
+              <strong style={{ fontSize: '18px', display: 'block', color: '#333' }}>{resumoGeral.conclusaoMediaGeral}</strong>
               <span style={{ fontSize: '12px', color: '#666' }}>Conclusão média geral</span>
             </div>
           </div>
@@ -92,7 +136,7 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
         </div>
 
         <div className="detalhes-municipio-card" style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', flexGrow: 1 }}>
-          {!municipioSelecionado ? (
+          {!municipioAtualNoMapa ? (
             <div style={{ textAlign: 'center', color: '#999', marginTop: '40px' }}>
               <MapPin size={32} style={{ margin: '0 auto', opacity: 0.5 }} />
               <p style={{ marginTop: '10px', fontSize: '14px' }}>Clique em um município no mapa para visualizar os detalhes das obras.</p>
@@ -101,18 +145,18 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '10px', marginBottom: '15px' }}>
                 <h4 style={{ color: '#E67E22', fontSize: '14px', textTransform: 'uppercase' }}>
-                  OBRAS EM {municipioSelecionado.nome} - PE
+                  OBRAS EM {municipioAtualNoMapa.nome} - PE
                 </h4>
-                <span style={{ fontSize: '12px', color: '#666' }}>{municipioSelecionado.obras?.length || 0} obras</span>
+                <span style={{ fontSize: '12px', color: '#666' }}>{municipioAtualNoMapa.obras?.length || 0} obras</span>
               </div>
 
               <div className="lista-obras-lateral" style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '500px', overflowY: 'auto', paddingRight: '5px' }}>
-                {municipioSelecionado.obras?.map((obra, index) => (
+                {municipioAtualNoMapa.obras?.map((obra, index) => (
                   <div key={index} className="obra-item" style={{ borderBottom: '2px dashed #eee', paddingBottom: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                       <strong style={{ fontSize: '14px', color: '#333' }}>{obra.nomeUnidade}</strong>
                       <strong style={{ fontSize: '14px', color: '#E67E22' }}>
-                        {obra.execucaoEnte !== "ND" ? `${obra.execucaoEnte}%` : "ND"}
+                        {obra.execucaoEnte}
                       </strong>
                     </div>
 
@@ -121,6 +165,7 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ccc' }}></div>
                         {obra.situacao || 'Sem situação'}
                       </span>
+                      <span style={{ fontSize: '10px', color: '#888' }}>Prop: {obra.Proposta || obra.proposta || 'N/A'}</span>
                     </div>
 
                     <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
@@ -134,7 +179,7 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
                           <strong>{obra.quemFezContato}</strong>
                         </div>
                         <div>
-                          <span style={{ color: '#666', display: 'block', fontSize: '10px' }}>Data do contato:</span>
+                          <span style={{ color: '... 666', display: 'block', fontSize: '10px' }}>Data do contato:</span>
                           <strong>{obra.dataContato}</strong>
                         </div>
                         <div>

@@ -4,6 +4,7 @@ import { LayoutDashboard, Map, MessageSquare, Menu, X, Mail } from 'lucide-react
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
 import DashboardRespostas from './pages/DashboardRespostas';
+import { supabase } from './utils/supabase';
 import './index.css';
 
 const HeaderNavegacao = () => {
@@ -46,7 +47,7 @@ const MobileHeader = ({ onOpenMenu }) => (
     <button onClick={onOpenMenu} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
       <Menu size={24} color="#fff" />
     </button>
-    <span className="mobile-header-title">SISMOB</span>
+    <span className="mobile-header-title">SISMOB - PAC</span>
     <div style={{ width: 24 }}></div>
   </div>
 );
@@ -115,7 +116,7 @@ const MobileBottomNav = () => {
         <LayoutDashboard size={20} />
         <span>Geral</span>
       </Link>
-      <Link to="/mapa" className={`mobile-nav-item ${location.pathname === '/mapa' ? 'active' : ''}`}>
+      <Link to="/mapa" className={`mobile-nav-item ${location.pathname === '/' ? 'active' : ''}`}>
         <Map size={20} />
         <span>Mapa</span>
       </Link>
@@ -161,7 +162,6 @@ const RodapeInstitucional = () => (
 
 function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
-  const [dadosRespostas, setDadosRespostas] = useState([]);
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
 
   const [options, setOptions] = useState({
@@ -171,6 +171,70 @@ function App() {
     componentes: [],
     portes: []
   });
+
+  useEffect(() => {
+    const buscarDadosNuvem = async () => {
+      const { data, error } = await supabase
+        .from('sismob_nuvem')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erro ao buscar dados do Supabase:", error);
+        return;
+      }
+
+      if (data && data.dados_geral) {
+        setDadosPlanilha(data.dados_geral);
+      }
+    };
+
+    buscarDadosNuvem();
+
+    const inscricaoRealtime = supabase
+      .channel('mudancas-sismob-unificado')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE', 
+          schema: 'public',
+          table: 'sismob_nuvem',
+          filter: 'id=eq.1' 
+        },
+        (payload) => {
+          console.log("Planilha unificada atualizada na nuvem!");
+          if (payload.new && payload.new.dados_geral) {
+            setDadosPlanilha(payload.new.dados_geral);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(inscricaoRealtime);
+    };
+  }, []);
+
+  const salvarPlanilhaNuvem = async (jsonDados) => {
+    setDadosPlanilha(jsonDados);
+
+    const agora = new Date();
+    const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+
+    const { error } = await supabase
+      .from('sismob_nuvem')
+      .update({ 
+        dados_geral: jsonDados,
+        data_atualizacao: dataFormatada 
+      })
+      .eq('id', 1);
+
+    if (error) {
+      console.error("Erro ao salvar no Supabase:", error);
+      alert("Erro ao sincronizar com a nuvem.");
+    }
+  };
 
   return (
     <BrowserRouter>
@@ -189,7 +253,7 @@ function App() {
                 element={
                   <DashboardGeral 
                     dadosPlanilha={dadosPlanilha} 
-                    setDadosPlanilha={setDadosPlanilha}
+                    setDadosPlanilha={salvarPlanilhaNuvem} 
                     options={options}
                     setOptions={setOptions}
                   />
@@ -208,8 +272,8 @@ function App() {
                 path="/respostas" 
                 element={
                   <DashboardRespostas 
-                    dados={dadosRespostas} 
-                    setDados={setDadosRespostas} 
+                    dados={dadosPlanilha} 
+                    setDados={salvarPlanilhaNuvem} 
                   />
                 } 
               />
