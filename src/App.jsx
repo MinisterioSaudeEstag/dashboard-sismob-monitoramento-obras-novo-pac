@@ -4,6 +4,7 @@ import { LayoutDashboard, Map, MessageSquare, Menu, X, Mail } from 'lucide-react
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
 import DashboardRespostas from './pages/DashboardRespostas';
+import { supabase } from './utils/supabase';
 import './index.css';
 
 const HeaderNavegacao = () => {
@@ -162,6 +163,7 @@ const RodapeInstitucional = () => (
 function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
   const [dadosRespostas, setDadosRespostas] = useState([]);
+  const [dataAtualizacao, setDataAtualizacao] = useState(null); 
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
 
   const [options, setOptions] = useState({
@@ -172,6 +174,85 @@ function App() {
     portes: []
   });
 
+  useEffect(() => {
+    const buscarDadosNuvem = async () => {
+      const { data, error } = await supabase
+        .from('sismob_nuvem')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Erro ao buscar dados:", error);
+        return;
+      }
+
+      if (data) {
+        if (data.dados_geral) setDadosPlanilha(data.dados_geral);
+        if (data.dados_respostas) setDadosRespostas(data.dados_respostas);
+        if (data.data_atualizacao) setDataAtualizacao(data.data_atualizacao);
+      }
+    };
+
+    buscarDadosNuvem();
+
+    const inscricaoRealtime = supabase
+      .channel('mudancas-sismob')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE', 
+          schema: 'public',
+          table: 'sismob_nuvem',
+          filter: 'id=eq.1' 
+        },
+        (payload) => {
+          console.log("Planilha atualizada na nuvem! Recarregando gráficos...");
+          const novosDados = payload.new;
+          
+          if (novosDados.dados_geral) setDadosPlanilha(novosDados.dados_geral);
+          if (novosDados.dados_respostas) setDadosRespostas(novosDados.dados_respostas);
+          if (novosDados.data_atualizacao) setDataAtualizacao(novosDados.data_atualizacao);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(inscricaoRealtime);
+    };
+  }, []);
+
+  const salvarPlanilhaGeralNuvem = async (jsonDados) => {
+    setDadosPlanilha(jsonDados); 
+    
+    const agora = new Date();
+    const dataFormatada = `${agora.toLocaleDateString('pt-BR')} ${agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    setDataAtualizacao(dataFormatada);
+
+    const { error } = await supabase
+      .from('sismob_nuvem')
+      .update({ 
+        dados_geral: jsonDados,
+        data_atualizacao: dataFormatada 
+      })
+      .eq('id', 1);
+
+    if (error) console.error("Erro ao salvar planilha geral no Supabase:", error);
+  };
+
+  const salvarPlanilhaRespostasNuvem = async (jsonDados) => {
+    setDadosRespostas(jsonDados); 
+
+    const { error } = await supabase
+      .from('sismob_nuvem')
+      .update({ 
+        dados_respostas: jsonDados 
+      })
+      .eq('id', 1);
+
+    if (error) console.error("Erro ao salvar respostas no Supabase:", error);
+  };
+
   return (
     <BrowserRouter>
       <div className="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#f8f9fa' }}>
@@ -181,6 +262,7 @@ function App() {
 
         <HeaderNavegacao />
 
+<<<<<<< HEAD
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           <div style={{ flex: 1, paddingBottom: '30px' }}>
             <Routes>
@@ -217,6 +299,40 @@ function App() {
           </div>
           
           <RodapeInstitucional />
+=======
+        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                <DashboardGeral 
+                  dadosPlanilha={dadosPlanilha} 
+                  setDadosPlanilha={salvarPlanilhaGeralNuvem} 
+                  options={options}
+                  setOptions={setOptions}
+                />
+              } 
+            />
+            <Route 
+              path="/mapa" 
+              element={
+                <MapaObras 
+                  dadosPlanilha={dadosPlanilha} 
+                  opcoesFiltros={options} 
+                />
+              } 
+            />
+            <Route 
+              path="/respostas" 
+              element={
+                <DashboardRespostas 
+                  dados={dadosRespostas} 
+                  setDados={salvarPlanilhaRespostasNuvem} 
+                />
+              } 
+            />
+          </Routes>
+>>>>>>> 76fa3c6986b69a5d750a847ac330c8eec76c52d7
         </div>
 
         <MobileBottomNav />
