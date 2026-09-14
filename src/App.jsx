@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Map, MessageSquare, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Map, MessageSquare, Menu, X, Mail } from 'lucide-react';
 import DashboardGeral from './pages/DashboardGeral';
 import MapaObras from './pages/MapaObras';
 import DashboardRespostas from './pages/DashboardRespostas';
@@ -62,7 +62,7 @@ const MobileMenuDrawer = ({ isOpen, onClose }) => {
 
   return (
     <div className="mobile-drawer-overlay" onClick={onClose}>
-      <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()}>
+      <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column' }}>
         <div className="mobile-drawer-header">
           <span style={{ fontWeight: '700', fontSize: '16px', color: '#004b87' }}>Navegação SISMOB</span>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -70,7 +70,7 @@ const MobileMenuDrawer = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="mobile-drawer-links">
+        <div className="mobile-drawer-links" style={{ flex: 1 }}>
           <Link to="/" className={`mobile-drawer-link ${location.pathname === '/' ? 'active' : ''}`}>
             <LayoutDashboard size={20} /> Visão Geral
           </Link>
@@ -80,6 +80,27 @@ const MobileMenuDrawer = ({ isOpen, onClose }) => {
           <Link to="/respostas" className={`mobile-drawer-link ${location.pathname === '/respostas' ? 'active' : ''}`}>
             <MessageSquare size={20} /> Respostas (Campo)
           </Link>
+        </div>
+
+        {/* Informações Institucionais no Menu Mobile */}
+        <div style={{ padding: '20px', backgroundColor: '#f0f5fa', borderTop: '1px solid #dce4ec' }}>
+          <p style={{ fontWeight: '800', color: '#004b87', fontSize: '13px', margin: '0 0 8px 0', lineHeight: '1.3' }}>
+            Superintendência Estadual do Ministério da Saúde em Pernambuco
+          </p>
+          <p style={{ fontWeight: '600', color: '#E67E22', fontSize: '12px', margin: '0 0 12px 0' }}>
+            COTRE/PE e DITRE/PE
+          </p>
+          <p style={{ fontSize: '11px', color: '#555', margin: '0 0 12px 0', lineHeight: '1.4' }}>
+            Desenvolvido para acompanhamento das obras do sistema SISMOB (Pernambuco) relacionadas ao <strong>Novo PAC</strong>.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <a href="mailto:arthur.moreira@saude.gov.br" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#004b87', textDecoration: 'none' }}>
+              <Mail size={14} /> arthur.moreira@saude.gov.br
+            </a>
+            <a href="mailto:cotre.sems.pe@saude.gov.br" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#004b87', textDecoration: 'none' }}>
+              <Mail size={14} /> cotre.sems.pe@saude.gov.br
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -106,6 +127,38 @@ const MobileBottomNav = () => {
   );
 };
 
+const RodapeInstitucional = () => (
+  <footer className="desktop-footer" style={{
+    backgroundColor: '#004b87', 
+    color: '#ffffff',
+    padding: '24px 20px',
+    textAlign: 'center',
+    marginTop: 'auto',
+    borderTop: '4px solid #E67E22'
+  }}>
+    <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '700', letterSpacing: '0.5px' }}>
+        Superintendência Estadual do Ministério da Saúde em Pernambuco (SEMS/PE)
+      </h3>
+      <h4 style={{ margin: 0, fontSize: '14px', color: '#ffc107', fontWeight: '600' }}>
+        COTRE/PE e DITRE/PE
+      </h4>
+      <p style={{ margin: '8px 0', fontSize: '13px', color: '#e0e0e0', lineHeight: '1.5' }}>
+        Painel desenvolvido internamente para o acompanhamento estratégico e monitoramento físico das obras do sistema SISMOB no estado de Pernambuco, integradas ao <strong>Novo PAC</strong>.
+      </p>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '13px', fontWeight: '600' }}>Suporte e Dúvidas:</span>
+        <a href="mailto:arthur.moreira@saude.gov.br" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#99ccff', textDecoration: 'none', fontSize: '13px' }}>
+          <Mail size={16} /> arthur.moreira@saude.gov.br
+        </a>
+        <a href="mailto:cotre.sems.pe@saude.gov.br" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#99ccff', textDecoration: 'none', fontSize: '13px' }}>
+          <Mail size={16} /> cotre.sems.pe@saude.gov.br
+        </a>
+      </div>
+    </div>
+  </footer>
+);
+
 function App() {
   const [dadosPlanilha, setDadosPlanilha] = useState([]);
   const [dadosRespostas, setDadosRespostas] = useState([]);
@@ -128,38 +181,42 @@ function App() {
 
         <HeaderNavegacao />
 
-        <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '70px' }}>
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <DashboardGeral 
-                  dadosPlanilha={dadosPlanilha} 
-                  setDadosPlanilha={setDadosPlanilha}
-                  options={options}
-                  setOptions={setOptions}
-                />
-              } 
-            />
-            <Route 
-              path="/mapa" 
-              element={
-                <MapaObras 
-                  dadosPlanilha={dadosPlanilha} 
-                  opcoesFiltros={options} 
-                />
-              } 
-            />
-            <Route 
-              path="/respostas" 
-              element={
-                <DashboardRespostas 
-                  dados={dadosRespostas} 
-                  setDados={setDadosRespostas} 
-                />
-              } 
-            />
-          </Routes>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, paddingBottom: '30px' }}>
+            <Routes>
+              <Route 
+                path="/" 
+                element={
+                  <DashboardGeral 
+                    dadosPlanilha={dadosPlanilha} 
+                    setDadosPlanilha={setDadosPlanilha}
+                    options={options}
+                    setOptions={setOptions}
+                  />
+                } 
+              />
+              <Route 
+                path="/mapa" 
+                element={
+                  <MapaObras 
+                    dadosPlanilha={dadosPlanilha} 
+                    opcoesFiltros={options} 
+                  />
+                } 
+              />
+              <Route 
+                path="/respostas" 
+                element={
+                  <DashboardRespostas 
+                    dados={dadosRespostas} 
+                    setDados={setDadosRespostas} 
+                  />
+                } 
+              />
+            </Routes>
+          </div>
+          
+          <RodapeInstitucional />
         </div>
 
         <MobileBottomNav />
