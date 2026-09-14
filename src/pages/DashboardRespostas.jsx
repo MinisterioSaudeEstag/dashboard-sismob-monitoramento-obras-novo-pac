@@ -8,25 +8,53 @@ export default function DashboardRespostas({ dados, setDados }) {
   const formatarDataBR = (valorData) => {
     if (!valorData) return "Não informada";
     
-    if (typeof valorData === 'number') {
-      const dataBase = new Date(1899, 11, 30);
-      dataBase.setDate(dataBase.getDate() + valorData);
-      return dataBase.toLocaleDateString('pt-BR');
+    try {
+      if (typeof valorData === 'number') {
+        const dataBase = new Date(1899, 11, 30);
+        dataBase.setDate(dataBase.getDate() + valorData);
+        if (!isNaN(dataBase.getTime())) {
+          return dataBase.toLocaleDateString('pt-BR');
+        }
+      }
+
+      if (valorData instanceof Date) {
+        return valorData.toLocaleDateString('pt-BR');
+      }
+
+      const stringData = String(valorData).trim();
+      if (!stringData || stringData === 'NaT' || stringData === 'NaN') return "Não informada";
+
+      if (stringData.includes('/') || stringData.includes('-')) {
+        const partes = stringData.split(/[/,-]/);
+        if (partes.length === 3) {
+          let p1 = parseInt(partes[0], 10);
+          let p2 = parseInt(partes[1], 10);
+          let p3 = parseInt(partes[2], 10);
+
+          if (p3 > 1000) {
+            const dia = String(p2).padStart(2, '0');
+            const mes = String(p1).padStart(2, '0');
+            const ano = p3;
+            return `${dia}/${mes}/${ano}`;
+          }
+          if (p1 > 1000) {
+            const ano = p1;
+            const mes = String(p2).padStart(2, '0');
+            const dia = String(p3).padStart(2, '0');
+            return `${dia}/${mes}/${ano}`;
+          }
+        }
+      }
+
+      const dataObj = new Date(stringData);
+      if (!isNaN(dataObj.getTime())) {
+        return dataObj.toLocaleDateString('pt-BR');
+      }
+
+      return stringData;
+    } catch (e) {
+      return "Não informada";
     }
-
-    if (valorData instanceof Date) {
-      return valorData.toLocaleDateString('pt-BR');
-    }
-
-    const stringData = String(valorData).trim();
-    if (!stringData || stringData === 'NaT' || stringData === 'NaN') return "Não informada";
-
-    const dataObj = new Date(stringData);
-    if (!isNaN(dataObj.getTime())) {
-      return dataObj.toLocaleDateString('pt-BR');
-    }
-
-    return stringData;
   };
 
   const dadosFiltrados = useMemo(() => {

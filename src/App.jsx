@@ -83,7 +83,6 @@ const MobileMenuDrawer = ({ isOpen, onClose }) => {
           </Link>
         </div>
 
-        {/* Informações Institucionais no Menu Mobile */}
         <div style={{ padding: '20px', backgroundColor: '#f0f5fa', borderTop: '1px solid #dce4ec' }}>
           <p style={{ fontWeight: '800', color: '#004b87', fontSize: '13px', margin: '0 0 8px 0', lineHeight: '1.3' }}>
             Superintendência Estadual do Ministério da Saúde em Pernambuco
