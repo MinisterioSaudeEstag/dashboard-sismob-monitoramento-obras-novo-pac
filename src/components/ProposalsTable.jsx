@@ -10,6 +10,25 @@ const PRIORITY_CLASS = {
   Baixa: "badge badge-baixa",
 };
 
+// Função caçadora dinâmica: varre o objeto buscando por palavras-chave (ignora acentos e maiúsculas)
+const encontrarValor = (obj, keywords) => {
+  if (!obj) return null;
+  const chaves = Object.keys(obj);
+  for (let chave of chaves) {
+    const chaveLower = chave.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    for (let kw of keywords) {
+      const kwLower = kw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (chaveLower.includes(kwLower)) {
+        const val = obj[chave];
+        if (val !== undefined && val !== null && val !== "" && val !== "ND") {
+          return val;
+        }
+      }
+    }
+  }
+  return null;
+};
+
 const extrairAno = (valor) => {
   if (!valor) return "ND";
   if (typeof valor === 'number' && valor > 10000) {
@@ -17,8 +36,9 @@ const extrairAno = (valor) => {
     d.setDate(d.getDate() + Math.floor(valor));
     return d.getFullYear();
   }
-  const match = String(valor).match(/\d{4}/);
-  return match ? match[0] : valor;
+  const str = String(valor);
+  const match = str.match(/\d{4}/);
+  return match ? match[0] : str;
 };
 
 const formatarPercentual = (valor) => {
@@ -84,20 +104,30 @@ export default function ProposalsTable({ rows }) {
               </tr>
             )}
             {visibleRows.map((r, i) => {
-              const dias = r.diasSemMonitoramento ?? r['Dias sem monitoramento SISMOB'] ?? r['Dias sem monitoramento (SISMOB)'] ?? '0';
-              const ano = r.anoRepasse ?? extrairAno(r['Data do repasse']);
-              const execSismob = r.execucaoSismob ?? formatarPercentual(r['Execução física (%) SISMOB'] ?? r['Execução física (%) (SISMOB)']);
-              const conclusao = r.conclusaoSismob ?? formatarData(r['Data prevista de conclusão SISMOB'] ?? r['Data prevista de conclusão (SISMOB)']);
+              // Busca inteligente e dinâmica em cada linha
+              const dias = encontrarValor(r, ['dias sem monitoramento', 'monitoramento']) ?? '0';
+              const repasseRaw = encontrarValor(r, ['data do repasse', 'repasse', 'anorepasse']);
+              const ano = extrairAno(repasseRaw);
+              const execRaw = encontrarValor(r, ['execução física', 'execucao', 'execucaosismob']);
+              const execSismob = formatarPercentual(execRaw);
+              const conclusaoRaw = encontrarValor(r, ['data prevista de conclusão', 'conclusao', 'conclusaosismob']);
+              const conclusao = formatarData(conclusaoRaw);
+
+              const propostaVal = r.proposta || r.Proposta || encontrarValor(r, ['proposta']) || 'ND';
+              const municipioVal = r.municipio || r.Município || encontrarValor(r, ['municipio']) || 'ND';
+              const componenteVal = r.componente || r.Componente || encontrarValor(r, ['componente']) || 'ND';
+              const situacaoVal = r.situacao || r['Situação no SISMOB'] || encontrarValor(r, ['situacao']) || 'ND';
+              const prioridadeVal = r.prioridade || r['Prioridade de contato'] || encontrarValor(r, ['prioridade']) || 'ND';
 
               return (
-                <tr key={r.proposta + i}>
-                  <td>{r.proposta || r.Proposta || 'ND'}</td>
-                  <td>{r.municipio || r.Município || 'ND'}</td>
-                  <td>{r.componente || r.Componente || 'ND'}</td>
-                  <td>{r.situacao || r['Situação no SISMOB'] || 'ND'}</td>
+                <tr key={propostaVal + i}>
+                  <td>{propostaVal}</td>
+                  <td>{municipioVal}</td>
+                  <td>{componenteVal}</td>
+                  <td>{situacaoVal}</td>
                   <td>
-                    <span className={PRIORITY_CLASS[r.prioridade] || "badge"}>
-                      {r.prioridade || r['Prioridade de contato'] || 'ND'}
+                    <span className={PRIORITY_CLASS[prioridadeVal] || "badge"}>
+                      {prioridadeVal}
                     </span>
                   </td>
                   <td>{dias}</td>
