@@ -16,8 +16,21 @@ export const processExcelFile = (file, callback) => {
         defval: ""  
       });
 
+      const getVal = (row, keywords) => {
+        const chaves = Object.keys(row);
+        for (let chave of chaves) {
+          const chaveLimpa = chave.trim().toLowerCase();
+          for (let keyword of keywords) {
+            if (chaveLimpa.includes(keyword.trim().toLowerCase())) {
+              return row[chave] !== "" ? row[chave] : undefined;
+            }
+          }
+        }
+        return undefined;
+      };
+
       const extrairAno = (valor) => {
-        if (!valor) return "ND";
+        if (valor === undefined || valor === null || valor === "") return "ND";
         if (valor instanceof Date) return String(valor.getFullYear());
         
         if (typeof valor === 'number' || !isNaN(Number(valor))) {
@@ -34,7 +47,7 @@ export const processExcelFile = (file, callback) => {
       };
 
       const formatarData = (valor) => {
-        if (!valor) return "ND";
+        if (valor === undefined || valor === null || valor === "") return "ND";
         if (valor instanceof Date) return valor.toLocaleDateString('pt-BR');
         
         if (typeof valor === 'number' || !isNaN(Number(valor))) {
@@ -53,27 +66,43 @@ export const processExcelFile = (file, callback) => {
 
       const formatarExecucao = (valor) => {
         if (valor === undefined || valor === null || valor === "") return "0%";
+        const strVal = String(valor).trim();
+        if (strVal.includes('%')) return strVal;
+        
         const num = Number(valor);
         if (!isNaN(num)) {
-          const finalNum = num <= 1 && num > 0 ? num * 100 : num;
+          const finalNum = (num > 0 && num <= 1) ? num * 100 : num;
           return `${Math.round(finalNum)}%`;
         }
-        return String(valor);
+        return "0%";
       };
 
       const dadosNormalizados = jsonDados.map(row => {
+        
+        const diasRaw = getVal(row, ['dias sem monitoramento sismob']);
+        const execSismobRaw = getVal(row, ['execução física (%) sismob']);
+        const dataRepasseRaw = getVal(row, ['data do repasse']);
+        const conclusaoSismobRaw = getVal(row, ['data prevista de conclusão sismob']);
+
         return {
           ...row,
-          diasSemMonitoramento: row['Dias sem monitoramento SISMOB'] || row['Dias sem monitoramento (SISMOB)'] || 0,
-          execucaoSismob: formatarExecucao(row['Execução física (%) SISMOB'] || row['Execução física (%) (SISMOB)']),
-          anoRepasse: extrairAno(row['Data do repasse'] || row['Data do repasse (ano)']),
-          conclusaoSismob: formatarData(row['Data prevista de conclusão SISMOB'] || row['Data prevista de conclusão (SISMOB)']),
+          proposta: getVal(row, ['proposta']),
+          municipio: getVal(row, ['município', 'municipio']),
+          componente: getVal(row, ['componente']),
+          situacao: getVal(row, ['situação no sismob']),
+          prioridade: getVal(row, ['prioridade de contato']),
+          porte: getVal(row, ['porte']),
+
+          diasSemMonitoramento: diasRaw !== undefined ? diasRaw : 0,
+          execucaoSismob: formatarExecucao(execSismobRaw),
+          anoRepasse: extrairAno(dataRepasseRaw),
+          conclusaoSismob: formatarData(conclusaoSismobRaw),
           
-          quemFezContato: row['Quem fez o contato?'] || 'ND',
-          execucaoEnte: row['Execução informada pelo ente (%)'] || 'ND',
-          conclusaoEnte: row['Data/Previsão de conclusão informada pelo ente'] || 'ND',
-          inauguracaoEnte: row['Data/Previsão de inauguração informada pelo ente'] || 'ND',
-          dataContato: row['Data do contato'] || ''
+          quemFezContato: getVal(row, ['quem fez o contato']) || 'ND',
+          execucaoEnte: getVal(row, ['execução informada pelo ente']) || 'ND',
+          conclusaoEnte: getVal(row, ['previsão de conclusão informada']) || 'ND',
+          inauguracaoEnte: getVal(row, ['previsão de inauguração informada']) || 'ND',
+          dataContato: getVal(row, ['data do contato']) || ''
         };
       });
       
