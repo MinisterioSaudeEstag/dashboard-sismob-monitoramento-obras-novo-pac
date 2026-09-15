@@ -6,7 +6,12 @@ export const processExcelFile = (file, callback) => {
   reader.onload = (e) => {
     try {
       const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const workbook = XLSX.read(data, { 
+        type: 'array', 
+        cellDates: true,
+        cellStyles: true,
+        cellFormula: false 
+      });
 
       const nomePrimeiraAba = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[nomePrimeiraAba];
