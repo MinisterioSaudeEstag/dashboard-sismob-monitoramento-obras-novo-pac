@@ -6,12 +6,12 @@ export default function DashboardRespostas({ dados, setDados }) {
   const [busca, setBusca] = useState('');
 
   const formatarDataBR = (valorData) => {
-    if (!valorData) return "Não informada";
+    if (!valorData || valorData === 'ND') return "Não informada";
     
     try {
       if (typeof valorData === 'number') {
         const dataBase = new Date(1899, 11, 30);
-        dataBase.setDate(dataBase.getDate() + valorData);
+        dataBase.setDate(dataBase.getDate() + Math.floor(valorData));
         if (!isNaN(dataBase.getTime())) {
           return dataBase.toLocaleDateString('pt-BR');
         }
@@ -64,8 +64,8 @@ export default function DashboardRespostas({ dados, setDados }) {
       const temContato = row.quemFezContato && row.quemFezContato !== 'Não informado' && row.quemFezContato !== 'ND';
       
       const termo = busca.toLowerCase();
-      const matchBusca = String(row['Município Convenente'] || row.municipio || '').toLowerCase().includes(termo) || 
-                         String(row.proposta || '').toLowerCase().includes(termo);
+      const matchBusca = String(row.municipio || row['Município'] || '').toLowerCase().includes(termo) || 
+                         String(row.proposta || row['Proposta'] || '').toLowerCase().includes(termo);
       
       return temContato && matchBusca;
     }).map(row => {
@@ -76,24 +76,31 @@ export default function DashboardRespostas({ dados, setDados }) {
       if (execBruta !== undefined && execBruta !== null && execBruta !== 'ND' && execBruta !== "") {
         const num = Number(execBruta);
         if (!isNaN(num)) {
-          valorNumericoExec = num <= 1 ? num * 100 : num;
+          valorNumericoExec = num <= 1 && num > 0 ? num * 100 : num;
           execucaoPercentual = Math.round(valorNumericoExec).toString();
         }
       }
 
       const porteOriginal = row.porte || row['Porte'];
       const porteTexto = porteOriginal && String(porteOriginal).trim() !== "" && String(porteOriginal) !== "nan"
-        ? String(porteOriginal).trim()
+        ? `Porte: ${String(porteOriginal).trim()}`
         : "";
 
       return {
         ...row,
-        dataContatoFormatada: formatarDataBR(row.dataContato || row['Data do contato']),
-        conclusaoFormatada: formatarDataBR(row.conclusaoEnte || row['Data/Previsão de conclusão informada pelo ente']),
-        inauguracaoFormatada: formatarDataBR(row.inauguracaoEnte || row['Data/Previsão de inauguração informada pelo ente']),
+        propostaInfo: row.proposta || row['Proposta'] || 'N/A',
+        municipioInfo: row.municipio || row['Município'] || 'ND',
+        componenteInfo: row.componente || row['Componente'] || 'ND',
+        
+        // Puxando as variáveis limpas do processor
+        dataContatoFormatada: formatarDataBR(row.dataContato),
+        conclusaoFormatada: formatarDataBR(row.conclusaoEnte),
+        inauguracaoFormatada: formatarDataBR(row.inauguracaoEnte),
+        
         execucaoEnteAjustada: execucaoPercentual,
         valorExecucaoNum: valorNumericoExec,
-        porteTexto: porteTexto
+        porteTexto: porteTexto,
+        observacoesFormatada: row['Observações e problemas'] || row.observacoes || "Sem observações"
       };
     });
   }, [dados, busca]);
@@ -104,8 +111,8 @@ export default function DashboardRespostas({ dados, setDados }) {
     let qtdExecucaoValida = 0;
 
     dadosFiltrados.forEach(d => {
-      const mun = d['Município Convenente'] || d.municipio;
-      if (mun) totalMunicipios.add(mun);
+      const mun = d.municipioInfo;
+      if (mun && mun !== 'ND') totalMunicipios.add(mun);
 
       if (d.valorExecucaoNum > 0) {
         somaExecucaoEnte += d.valorExecucaoNum;
@@ -113,7 +120,7 @@ export default function DashboardRespostas({ dados, setDados }) {
       }
     });
 
-    const mediaExecucao = qtdExecucaoValida > 0 ? (somaExecucaoEnte / qtdExecucaoValida).toFixed(1) : "0,0";
+    const mediaExecucao = qtdExecucaoValida > 0 ? (somaExecucaoEnte / qtdExecucaoValida).toFixed(1) : "0.0";
 
     return {
       totalRespostas: dadosFiltrados.length,
@@ -136,7 +143,7 @@ export default function DashboardRespostas({ dados, setDados }) {
             <Search size={18} color="#999" />
             <input 
               type="text" 
-              placeholder="Pesquisar por município..." 
+              placeholder="Pesquisar por município ou proposta..." 
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
@@ -202,14 +209,14 @@ export default function DashboardRespostas({ dados, setDados }) {
                   <tr key={index}>
                     <td>
                       <div className="stack-text">
-                        <strong>{item.proposta}</strong>
-                        <span>{item['Município Convenente'] || item.municipio}</span>
+                        <strong>{item.propostaInfo}</strong>
+                        <span>{item.municipioInfo}</span>
                       </div>
                     </td>
                     <td>
                       <div className="stack-text">
-                        <strong>{item.componente}</strong>
-                        {item.porteTexto && <span>{item.porteTexto}</span>}
+                        <strong>{item.componenteInfo}</strong>
+                        {item.porteTexto && <span style={{ color: '#888', fontSize: '11px' }}>{item.porteTexto}</span>}
                       </div>
                     </td>
                     <td>
@@ -236,7 +243,7 @@ export default function DashboardRespostas({ dados, setDados }) {
                     </td>
                     <td>
                       <div className="obs-text">
-                        {item.observacoes || <span className="empty-obs">Sem observações</span>}
+                        {item.observacoesFormatada}
                       </div>
                     </td>
                   </tr>
