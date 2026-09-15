@@ -4,6 +4,42 @@ import SismobMap from '../components/SismobMap';
 import { Building2, HardHat, PieChart, CalendarDays, MapPin } from 'lucide-react';
 import { applyFilters, prepararDadosParaMapa } from '../utils/aggregate';
 
+// Lê o primeiro valor "de verdade" entre várias chaves possíveis. Aceita
+// tanto o nome já normalizado pelo parser central (ex.: "nomeObra") quanto o
+// cabeçalho bruto da planilha (ex.: "Nome da unidade"), para o caso de esse
+// campo ainda não ter sido adicionado ao normalizador.
+function pick(obj, ...keys) {
+  for (const key of keys) {
+    const v = obj?.[key];
+    if (v !== undefined && v !== null && v !== '') return v;
+  }
+  return undefined;
+}
+
+// Formata qualquer valor de data (Date nativo, string ISO, string já em
+// dd/mm/aaaa) para exibição, sem produzir "NaT"/"ND" quando o valor existe.
+function formatarDataExibicao(valor) {
+  if (valor === undefined || valor === null || valor === '') return 'Não informada';
+  if (valor instanceof Date) {
+    if (Number.isNaN(valor.getTime())) return 'Não informada';
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(valor.getDate())}/${pad(valor.getMonth() + 1)}/${valor.getFullYear()}`;
+  }
+  const str = String(valor).trim();
+  if (!str) return 'Não informada';
+  return str.split('T')[0];
+}
+
+// Cores de referência para a bolinha de situação na lista de obras.
+const SITUACAO_DOT_COLORS = {
+  'Em execução e conclusão': '#1F5C8B',
+  'Em início de execução': '#E14C3C',
+  'Proposta em análise': '#F4C430',
+  'Concluída': '#3F9E4D',
+  'Em ação preparatória': '#F4C430',
+  'Obra paralisada': '#E14C3C',
+};
+
 export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
   const [filtros, setFiltros] = useState(DEFAULT_FILTERS);
   const [municipioSelecionado, setMunicipioSelecionado] = useState(null);
@@ -11,29 +47,59 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
   const dadosProcessados = useMemo(() => {
     if (!dadosPlanilha || !dadosPlanilha.length) return [];
 
-    return dadosPlanilha.map(obra => {
-      const valorBruto = obra['Execução informada pelo ente (%)'];
-      let execucaoNum = 0;
-      let execucaoFormatada = "ND";
+    return dadosPlanilha.map((obra) => {
+      // Nome da obra e situação: campos já normalizados pelo parser central.
+      const nomeUnidade = pick(obra, 'nomeObra', 'Nome da unidade') || 'Unidade sem nome';
+      const situacao = pick(obra, 'situacao', 'Situação no SISMOB', 'Situação') || 'Sem situação';
+      const proposta = pick(obra, 'proposta', 'Proposta') || 'N/A';
 
-      if (valorBruto !== undefined && valorBruto !== null && valorBruto !== "") {
-        const num = Number(valorBruto);
-        if (!isNaN(num)) {
-          execucaoNum = num <= 1 ? num * 100 : num;
+      // Execução física: preferimos o valor oficial do SISMOB
+      // (execucaoFisica, já normalizado como número de 0 a 100). Se a
+      // planilha trouxer também a execução informada pelo ente, usamos como
+      // alternativa quando o campo do SISMOB não existir.
+      const execucaoRaw = pick(
+        obra,
+        'execucaoFisica',
+        'execucaoInformadaEnte',
+        'Execução informada pelo ente (%)'
+      );
+      let execucaoNum = 0;
+      let execucaoFormatada = 'ND';
+      let execucaoDisponivel = false;
+      if (execucaoRaw !== undefined) {
+        const num = Number(execucaoRaw);
+        if (!Number.isNaN(num)) {
+          execucaoNum = num > 0 && num <= 1 ? num * 100 : num;
           execucaoFormatada = `${Math.round(execucaoNum)}%`;
+          execucaoDisponivel = true;
         }
       }
 
+      const quemFezContato = pick(obra, 'quemFezContato', 'Quem fez o contato?') || 'Não informado';
+      const dataContatoRaw = pick(obra, 'dataContato', 'Data do contato');
+      const conclusaoEnteRaw = pick(
+        obra,
+        'conclusaoInformadaEnte',
+        'Data/Previsão de conclusão informada pelo ente'
+      );
+      const inauguracaoEnteRaw = pick(
+        obra,
+        'inauguracaoInformadaEnte',
+        'Data/Previsão de inauguração informada pelo ente'
+      );
+
       return {
         ...obra,
+        nomeUnidade,
+        situacao,
+        proposta,
         execucaoEnte: execucaoFormatada,
-        _execucaoValorNumerico: execucaoNum, 
-        nomeUnidade: obra['Nome da unidade'] || 'Unidade sem nome',
-        situacao: obra['Situação no SISMOB'] || obra['Situação'] || 'Sem situação',
-        quemFezContato: obra['Quem fez o contato?'] || 'Não informado',
-        dataContato: obra['Data do contato'] ? String(obra['Data do contato']).split('T')[0] : 'Não informada',
-        conclusaoEnte: obra['Data/Previsão de conclusão informada pelo ente'] ? String(obra['Data/Previsão de conclusão informada pelo ente']).split('T')[0] : 'Não informada',
-        inauguracaoEnte: obra['Data/Previsão de inauguração informada pelo ente'] ? String(obra['Data/Previsão de inauguração informada pelo ente']).split('T')[0] : 'Não informada',
+        _execucaoValorNumerico: execucaoNum,
+        _execucaoDisponivel: execucaoDisponivel,
+        quemFezContato,
+        dataContato: formatarDataExibicao(dataContatoRaw),
+        conclusaoEnte: formatarDataExibicao(conclusaoEnteRaw),
+        inauguracaoEnte: formatarDataExibicao(inauguracaoEnteRaw),
       };
     });
   }, [dadosPlanilha]);
@@ -49,13 +115,13 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
   const resumoGeral = useMemo(() => {
     const totalObras = dadosFiltrados.length;
     const totalMunicipios = dadosObrasAgrupados.length;
-    
+
     const somaDias = dadosFiltrados.reduce((acc, r) => acc + (Number(r.diasSemMonitoramento) || 0), 0);
     const diasMedios = totalObras > 0 ? Math.round(somaDias / totalObras) : 0;
 
-    const obrasComExecucao = dadosFiltrados.filter(r => r._execucaoValorNumerico > 0 || r.execucaoEnte !== "ND");
-    let conclusaoMediaGeral = "ND";
-    
+    const obrasComExecucao = dadosFiltrados.filter((r) => r._execucaoDisponivel);
+    let conclusaoMediaGeral = 'ND';
+
     if (obrasComExecucao.length > 0) {
       const somaExecucao = obrasComExecucao.reduce((acc, r) => acc + r._execucaoValorNumerico, 0);
       conclusaoMediaGeral = `${Math.round(somaExecucao / obrasComExecucao.length)}%`;
@@ -71,37 +137,37 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
 
   const municipioAtualNoMapa = useMemo(() => {
     if (!municipioSelecionado) return null;
-    return dadosObrasAgrupados.find(m => m.nome === municipioSelecionado.nome) || null;
+    return dadosObrasAgrupados.find((m) => m.nome === municipioSelecionado.nome) || null;
   }, [dadosObrasAgrupados, municipioSelecionado]);
 
   return (
     <div className="mapa-obras-container" style={{ display: 'flex', gap: '20px', padding: '20px' }}>
-      
+
       <aside className="mapa-sidebar-left" style={{ width: '300px', flexShrink: 0 }}>
-        <FiltersPanel 
-          modo="mapa" 
-          filters={filtros} 
-          setFilters={setFiltros} 
-          options={opcoesFiltros} 
+        <FiltersPanel
+          modo="mapa"
+          filters={filtros}
+          setFilters={setFiltros}
+          options={opcoesFiltros}
         />
       </aside>
 
       <main className="mapa-main-content" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="mapa-wrapper" style={{ background: '#fff', borderRadius: '8px', padding: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', height: '100%' }}>
-          <SismobMap 
-            dadosObrasAgrupados={dadosObrasAgrupados} 
-            onSelectMunicipio={(municipio) => setMunicipioSelecionado(municipio)} 
+          <SismobMap
+            dadosObrasAgrupados={dadosObrasAgrupados}
+            onSelectMunicipio={(municipio) => setMunicipioSelecionado(municipio)}
           />
         </div>
       </main>
 
       <aside className="mapa-sidebar-right" style={{ width: '320px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        
+
         <div className="resumo-card" style={{ background: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
           <h4 style={{ color: '#E67E22', fontSize: '14px', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
             RESUMO DOS MUNICÍPIOS
           </h4>
-          
+
           <div className="resumo-item" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
             <Building2 size={24} color="#E67E22" />
             <div>
@@ -162,24 +228,31 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#666', marginBottom: '10px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ccc' }}></div>
+                        <div
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: SITUACAO_DOT_COLORS[obra.situacao] || '#ccc',
+                          }}
+                        ></div>
                         {obra.situacao || 'Sem situação'}
                       </span>
-                      <span style={{ fontSize: '10px', color: '#888' }}>Prop: {obra.Proposta || obra.proposta || 'N/A'}</span>
+                      <span style={{ fontSize: '10px', color: '#888' }}>Prop: {obra.proposta || 'N/A'}</span>
                     </div>
 
                     <div style={{ background: '#f8f9fa', padding: '12px', borderRadius: '6px', border: '1px solid #e9ecef' }}>
                       <h5 style={{ margin: '0 0 10px 0', fontSize: '11px', color: '#999', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Informações do Município
                       </h5>
-                      
+
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px' }}>
                         <div>
                           <span style={{ color: '#666', display: 'block', fontSize: '10px' }}>Contato feito por:</span>
                           <strong>{obra.quemFezContato}</strong>
                         </div>
                         <div>
-                          <span style={{ color: '... 666', display: 'block', fontSize: '10px' }}>Data do contato:</span>
+                          <span style={{ color: '#666', display: 'block', fontSize: '10px' }}>Data do contato:</span>
                           <strong>{obra.dataContato}</strong>
                         </div>
                         <div>
@@ -193,7 +266,7 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
                       </div>
                     </div>
                   </div>
-                ))} 
+                ))}
               </div>
             </>
           )}
