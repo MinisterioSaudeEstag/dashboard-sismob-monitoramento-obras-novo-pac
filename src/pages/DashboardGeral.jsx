@@ -1,151 +1,89 @@
-import { useMemo, useState, useEffect } from "react";
-import { FileText, HardHat, BarChart3, Search, CheckCircle2, Clock, CalendarClock } from "lucide-react";
+import React from "react";
+import { Download } from "lucide-react";
 
-import { FILTER_OPTIONS } from "../data/sampleData";
-import FiltersPanel, { DEFAULT_FILTERS } from "../components/FiltersPanel";
-import KpiCard from "../components/KpiCard";
-import PrioridadeBarChart from "../components/PrioridadeBarChart";
-import ComponenteBarChart from "../components/ComponenteBarChart";
-import DonutCard from "../components/DonutCard";
-import ProposalsTable from "../components/ProposalsTable";
-import ActionsPanel from "../components/ActionsPanel";
-import SpreadsheetUploader from "../components/SpreadsheetUploader";
-
-import {
-  applyFilters,
-  computeKPIs,
-  porPrioridade,
-  porComponente,
-  porSituacao,
-  porDiasSemMonitoramento,
-  computeAcoesPendentes,
-} from "../utils/aggregate";
-import { SITUACAO_COLORS, DIAS_BUCKET_COLORS } from "../theme";
-
-const OBSERVACOES = [
-  "Atraso na atualização do SISMOB;",
-  "Datas de conclusão desatualizadas;",
-  "Execução física divergente da informada pelo ente;",
-  "Necessidade de superação de etapa.",
-];
-
-function formatTimestamp(date) {
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-export default function DashboardGeral({ dadosPlanilha, setDadosPlanilha, options, setOptions }) {
-  
-  const [filters, setFilters] = useState(DEFAULT_FILTERS);
-  const [lastUpdated, setLastUpdated] = useState(() => new Date());
-
-  const anos = useMemo(() => {
-    const set = new Set(dadosPlanilha.map((r) => String(r.anoRepasse)));
-    return [...set].sort();
-  }, [dadosPlanilha]);
-
-  useEffect(() => {
-    if (dadosPlanilha.length > 0) {
-      const municipios = [...new Set(dadosPlanilha.map((r) => r.municipio))].sort();
-      const componentes = [...new Set(dadosPlanilha.map((r) => r.componente))].sort();
-      const situacoes = [...new Set(dadosPlanilha.map((r) => r.situacao))];
-      const portes = [...new Set(dadosPlanilha.map((r) => r.porte))].filter(Boolean); 
-      
-      setOptions({
-        municipios,
-        componentes,
-        situacoes,
-        portes,
-        prioridades: FILTER_OPTIONS.prioridades
-      });
-    }
-  }, [dadosPlanilha, setOptions]);
-
-  const filteredRows = useMemo(() => applyFilters(dadosPlanilha, filters), [dadosPlanilha, filters]);
-
-  const kpis = useMemo(() => computeKPIs(filteredRows), [filteredRows]);
-  const dataPrioridade = useMemo(() => porPrioridade(filteredRows), [filteredRows]);
-  const dataComponente = useMemo(() => porComponente(filteredRows), [filteredRows]);
-  const dataSituacao = useMemo(() => porSituacao(filteredRows), [filteredRows]);
-  const dataDias = useMemo(() => porDiasSemMonitoramento(filteredRows), [filteredRows]);
-  const acoesPendentes = useMemo(() => computeAcoesPendentes(filteredRows), [filteredRows]);
-
-  function handleDataLoaded(rows) {
-    setDadosPlanilha(rows);
-    setFilters(DEFAULT_FILTERS);
-    setLastUpdated(new Date());
-  }
+export default function ProposalsTable({ rows }) {
+  const handleExportCSV = () => {
+    if (!rows || rows.length === 0) return;
+    const headers = [
+      "PROPOSTA", "MUNICÍPIO", "DIAS SEM MONITORAMENTO (SISMOB)", 
+      "DATA DO REPASSE (ANO)", "EXECUÇÃO FÍSICA (%) (SISMOB)", "DATA PREVISTA DE CONCLUSÃO (SISMOB)"
+    ];
+    const csvRows = [headers.join(",")];
+    rows.forEach(row => {
+      const csvRow = [
+        row.proposta || row.Proposta || "ND",
+        row.municipio || row.Município || "ND",
+        row.diasSemMonitoramento,
+        row.anoRepasse,
+        row.execucaoSismob,
+        row.conclusaoSismob
+      ];
+      csvRows.push(csvRow.join(","));
+    });
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "acompanhamento_propostas_sismob.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
-    <div className="page">
-      <div className="dashboard">
-        <header className="dashboard-header">
-          <div className="brand">
-            <div className="brand-mark">
-              <span className="brand-mark-bar bar1" />
-              <span className="brand-mark-bar bar2" />
-            </div>
-            <div>
-              <div className="brand-title">SISMOB</div>
-              <div className="brand-subtitle">Sistema de Monitoramento de Obras</div>
-            </div>
-          </div>
+    <div className="table-container" style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      
+      <div className="table-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #eee' }}>
+        <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>Acompanhamento das propostas</h3>
+        <button onClick={handleExportCSV} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: '1px solid #E67E22', color: '#E67E22', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
+          <Download size={16} /> Exportar CSV
+        </button>
+      </div>
 
-          <div className="header-titles">
-            <h1>Acompanhamento e Monitoramento de Obras</h1>
-            <p>Visão geral das propostas e obras registradas no SISMOB</p>
-          </div>
-
-          <div className="header-actions">
-           <SpreadsheetUploader onDataLoaded={setDadosPlanilha} />
-          </div>
-        </header>
-
-        <div className="dashboard-layout">
-          <aside className="sidebar">
-            <FiltersPanel filters={filters} setFilters={setFilters} options={options} anos={anos} modo="geral" />
-
-            <DonutCard
-              title="Propostas por situação"
-              data={dataSituacao}
-              colors={SITUACAO_COLORS}
-              centerLabel="Total de propostas"
-              size={190}
-            />
-          </aside>
-
-          <main className="main">
-            <section className="kpi-row">
-              <KpiCard icon={<FileText size={30} color="#F7941D" />} label="Total de propostas" value={kpis.total} big />
-              <KpiCard icon={<HardHat size={28} color="#F7941D" />} label="Em execução e conclusão" value={kpis.emExecucao} sublabel={`${kpis.emExecucaoPct}% do total`} />
-              <KpiCard icon={<BarChart3 size={28} color="#F7941D" />} label="Em início de execução" value={kpis.emInicio} sublabel={`${kpis.emInicioPct}% do total`} />
-              <KpiCard icon={<Search size={28} color="#F7941D" />} label="Proposta em análise" value={kpis.emAnalise} sublabel={`${kpis.emAnalisePct}% do total`} />
-              <KpiCard icon={<CheckCircle2 size={28} color="#F7941D" />} label="Concluídas" value={kpis.concluidas} sublabel={`${kpis.concluidasPct}% do total`} />
-              <KpiCard icon={<Clock size={28} color="#F7941D" />} label="Média dias sem monitoramento" value={kpis.mediaDias} sublabel="dias" />
-            </section>
-
-            <section className="charts-row">
-              <PrioridadeBarChart data={dataPrioridade} />
-              <ComponenteBarChart data={dataComponente} />
-              <DonutCard title="Dias sem monitoramento (SISMOB)" data={dataDias} colors={DIAS_BUCKET_COLORS} centerLabel="Total de propostas" size={170} />
-            </section>
-
-            <section className="bottom-row">
-              <ProposalsTable rows={filteredRows} />
-              <ActionsPanel acoes={acoesPendentes} observacoes={OBSERVACOES} />
-            </section>
-          </main>
-        </div>
-
-        <footer className="dashboard-footer">
-          <div className="footer-icon">
-            <FileText size={16} />
-          </div>
-          <div>
-            <div className="footer-title">Fonte: SISMOB</div>
-            <div className="footer-subtitle">Dados referentes às propostas e obras</div>
-          </div>
-        </footer>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <thead>
+            <tr style={{ background: '#f7941d', color: '#fff' }}>
+              <th style={{ padding: '12px 16px', fontWeight: '600' }}>PROPOSTA / MUNICÍPIO</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600' }}>DIAS SEM MONITORAMENTO (SISMOB)</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600' }}>DATA DO REPASSE (ANO)</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600' }}>EXECUÇÃO FÍSICA (%) (SISMOB)</th>
+              <th style={{ padding: '12px 16px', fontWeight: '600' }}>DATA PREVISTA DE CONCLUSÃO (SISMOB)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(!rows || rows.length === 0) ? (
+              <tr>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+                  Nenhum dado encontrado.
+                </td>
+              </tr>
+            ) : (
+              rows.map((item, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '12px 16px' }}>
+                    <strong style={{ display: 'block', color: '#004b87' }}>{item.proposta || item.Proposta || 'ND'}</strong>
+                    <span style={{ color: '#666', fontSize: '12px' }}>{item.municipio || item.Município || 'ND'}</span>
+                  </td>
+                  <td style={{ padding: '12px 16px', color: '#444' }}>
+                    {item.diasSemMonitoramento}
+                  </td>
+                  <td style={{ padding: '12px 16px', color: '#444' }}>
+                    {item.anoRepasse}
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span style={{ background: '#FFF3E0', color: '#E67E22', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      {item.execucaoSismob}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 16px', color: '#444' }}>
+                    {item.conclusaoSismob}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
