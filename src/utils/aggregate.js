@@ -111,6 +111,15 @@ export function porDiasSemMonitoramento(rows) {
   });
 }
 
+// Formata um valor numérico (ou "ND") como percentual para exibição,
+// sem tratar 0 como "sem dado" (0% é um valor válido).
+function formatarPercentual(valor) {
+  if (valor === undefined || valor === null || valor === "" || valor === "ND") return "ND";
+  const num = Number(valor);
+  if (!Number.isFinite(num)) return "ND";
+  return `${Math.round(num)}%`;
+}
+
 export function prepararDadosParaMapa(rows) {
   const map = new Map();
 
@@ -118,52 +127,81 @@ export function prepararDadosParaMapa(rows) {
     if (!r.municipio) return;
 
     const nomeMunicipio = r.municipio.trim();
-    
+
     if (!map.has(nomeMunicipio)) {
       map.set(nomeMunicipio, {
         nome: nomeMunicipio,
         obras: [],
-        contagemPrioridades: { 'Alta': 0, 'Média': 0, 'Baixa': 0 },
-        totalObras: 0
+        contagemPrioridades: { Alta: 0, Média: 0, Baixa: 0 },
+        somaExecucao: 0,
+        totalComExecucao: 0,
+        totalObras: 0,
       });
     }
 
     const cidadeData = map.get(nomeMunicipio);
 
-    cidadeData.obras.push({
-      nomeUnidade: r.nomeUnidade || r.proposta || "Obra sem nome",
-      situacao: r.situacao,
-      execucaoFisica: r.execucaoFisica || "ND",
-      dataPrevisao: r.dataPrevistaConclusao || "ND",
+    // Execução física do SISMOB: já vem normalizada como número (0-100)
+    // vinda de utils/spreadsheet.js. Usamos Number.isFinite (não `||`) para
+    // não tratar 0% como "sem dado".
+    const execucaoNum = Number(r.execucaoFisica);
+    const execucaoValida = Number.isFinite(execucaoNum);
+    if (execucaoValida) {
+      cidadeData.somaExecucao += execucaoNum;
+      cidadeData.totalComExecucao += 1;
+    }
 
-      quemFezContato: r['Quem fez o contato?'] || "Não informado",
-      dataContato: r['Data do contato'] || "ND",
-      execucaoEnte: r['Execução informada pelo ente (%)'] || "ND",
-      conclusaoEnte: r['Data/Previsão de conclusão informada pelo ente'] || "ND",
-      inauguracaoEnte: r['Data/Previsão de inauguração informada pelo ente'] || "ND",
+    cidadeData.obras.push({
+      nomeUnidade: r.nomeUnidade || r.nomeObra || r.proposta || "Obra sem nome",
+      proposta: r.proposta || "N/A",
+      situacao: r.situacao || "Sem situação",
+      execucaoFisica: execucaoValida ? execucaoNum : null,
+      execucaoFisicaFormatada: formatarPercentual(r.execucaoFisica),
+      dataPrevistaConclusao: r.dataPrevistaConclusao || "Não informada",
+      dataPrevisao: r.dataPrevistaConclusao || "Não informada", // alias legado, caso o SismobMap.jsx use este nome
+
+      // Campos vindos da aba de Respostas -- já normalizados pelo
+      // spreadsheet.js (não são mais chaves brutas do Excel).
+      quemFezContato: r.quemFezContato || "Não informado",
+      dataContato: r.dataContato || "Não informada",
+      execucaoEnte: r.execucaoEnte,
+      execucaoEnteFormatada: formatarPercentual(r.execucaoEnte),
+      conclusaoEnte: r.conclusaoEnte || "Não informada",
+      inauguracaoEnte: r.inauguracaoEnte || "Não informada",
     });
 
     cidadeData.totalObras += 1;
 
     const pri = r.prioridade;
-    if (pri === 'Alta' || pri === 'Média' || pri === 'Baixa') {
+    if (pri === "Alta" || pri === "Média" || pri === "Baixa") {
       cidadeData.contagemPrioridades[pri] += 1;
     }
   });
 
-  return Array.from(map.values()).map(cidade => {
-    let prioridadeGeral = 'Baixa'; 
-    if (cidade.contagemPrioridades['Alta'] > 0) {
-      prioridadeGeral = 'Alta';
-    } else if (cidade.contagemPrioridades['Média'] > 0) {
-      prioridadeGeral = 'Média';
+  return Array.from(map.values()).map((cidade) => {
+    let prioridadeGeral = "Baixa";
+    if (cidade.contagemPrioridades["Alta"] > 0) {
+      prioridadeGeral = "Alta";
+    } else if (cidade.contagemPrioridades["Média"] > 0) {
+      prioridadeGeral = "Média";
     }
+
+    // Conclusão média das obras do município (usada no card "Conclusão
+    // média das obras" que aparece ao clicar num município no mapa).
+    const conclusaoMedia = cidade.totalComExecucao
+      ? Math.round(cidade.somaExecucao / cidade.totalComExecucao)
+      : null;
 
     return {
       nome: cidade.nome,
       prioridade: prioridadeGeral,
       obras: cidade.obras,
-      totalObras: cidade.totalObras
+      totalObras: cidade.totalObras,
+      // Exposto com 3 nomes só até confirmarmos qual o SismobMap.jsx lê de
+      // fato -- assim que você mandar esse arquivo eu deixo com um nome só.
+      conclusaoMedia,
+      mediaConclusao: conclusaoMedia,
+      percentualConclusao: conclusaoMedia,
     };
   });
 }

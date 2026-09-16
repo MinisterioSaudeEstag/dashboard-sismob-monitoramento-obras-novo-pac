@@ -60,7 +60,7 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
       const execucaoRaw = pick(
         obra,
         'execucaoFisica',
-        'execucaoInformadaEnte',
+        'execucaoEnte',
         'Execução informada pelo ente (%)'
       );
       let execucaoNum = 0;
