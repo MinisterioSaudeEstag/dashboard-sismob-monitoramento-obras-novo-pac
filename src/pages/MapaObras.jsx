@@ -4,10 +4,6 @@ import SismobMap from '../components/SismobMap';
 import { Building2, HardHat, PieChart, CalendarDays, MapPin } from 'lucide-react';
 import { applyFilters, prepararDadosParaMapa } from '../utils/aggregate';
 
-// Lê o primeiro valor "de verdade" entre várias chaves possíveis. Aceita
-// tanto o nome já normalizado pelo parser central (ex.: "nomeObra") quanto o
-// cabeçalho bruto da planilha (ex.: "Nome da unidade"), para o caso de esse
-// campo ainda não ter sido adicionado ao normalizador.
 function pick(obj, ...keys) {
   for (const key of keys) {
     const v = obj?.[key];
@@ -16,8 +12,6 @@ function pick(obj, ...keys) {
   return undefined;
 }
 
-// Formata qualquer valor de data (Date nativo, string ISO, string já em
-// dd/mm/aaaa) para exibição, sem produzir "NaT"/"ND" quando o valor existe.
 function formatarDataExibicao(valor) {
   if (valor === undefined || valor === null || valor === '') return 'Não informada';
   if (valor instanceof Date) {
@@ -30,7 +24,6 @@ function formatarDataExibicao(valor) {
   return str.split('T')[0];
 }
 
-// Cores de referência para a bolinha de situação na lista de obras.
 const SITUACAO_DOT_COLORS = {
   'Em execução e conclusão': '#1F5C8B',
   'Em início de execução': '#E14C3C',
@@ -48,15 +41,10 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
     if (!dadosPlanilha || !dadosPlanilha.length) return [];
 
     return dadosPlanilha.map((obra) => {
-      // Nome da obra e situação: campos já normalizados pelo parser central.
       const nomeUnidade = pick(obra, 'nomeObra', 'Nome da unidade') || 'Unidade sem nome';
       const situacao = pick(obra, 'situacao', 'Situação no SISMOB', 'Situação') || 'Sem situação';
       const proposta = pick(obra, 'proposta', 'Proposta') || 'N/A';
 
-      // Execução física: preferimos o valor oficial do SISMOB
-      // (execucaoFisica, já normalizado como número de 0 a 100). Se a
-      // planilha trouxer também a execução informada pelo ente, usamos como
-      // alternativa quando o campo do SISMOB não existir.
       const execucaoRaw = pick(
         obra,
         'execucaoFisica',

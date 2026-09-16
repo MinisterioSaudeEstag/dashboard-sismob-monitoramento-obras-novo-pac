@@ -1,6 +1,5 @@
 import * as XLSX from "xlsx";
 
-// Mapeia todas as variações de cabeçalhos da planilha unificada (SISMOB + Respostas)
 const HEADER_MAP = {
   proposta: "proposta",
   "n da proposta": "proposta",
@@ -41,12 +40,11 @@ const HEADER_MAP = {
   "data prevista de conclusão (sismob)": "dataPrevistaConclusao",
   "data prevista de conclusao": "dataPrevistaConclusao",
 
-  // Aba de Respostas e Acompanhamento Local
   "quem fez o contato?": "quemFezContato",
   "quem fez o contato": "quemFezContato",
   "contato por": "quemFezContato",
   "data do contato": "dataContato",
-  
+
   "execucao informada pelo ente (%)": "execucaoEnte",
   "execucao informada pelo ente": "execucaoEnte",
 
@@ -69,11 +67,20 @@ function normalizeHeader(h) {
     .toLowerCase();
 }
 
+function detectCampoEnte(normHeader) {
+  const temEnte = normHeader.includes("informada pelo ente") || normHeader.includes("informado pelo ente");
+  if (!temEnte) return null;
+  if (normHeader.includes("execu")) return "execucaoEnte";
+  if (normHeader.includes("conclus")) return "conclusaoEnte";
+  if (normHeader.includes("inaugura")) return "inauguracaoEnte";
+  return null;
+}
+
 function normalizeRow(rawRow) {
   const out = {};
   Object.entries(rawRow).forEach(([key, value]) => {
     const norm = normalizeHeader(key);
-    const field = HEADER_MAP[norm];
+    const field = HEADER_MAP[norm] || detectCampoEnte(norm);
     if (field) out[field] = value;
   });
   return out;
@@ -86,14 +93,12 @@ function coerceNumber(v, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// Converte número de série do Excel (ex: 45828 ou 46077) em data real
 function excelSerialToDate(serial) {
   const ms = Date.UTC(1899, 11, 30) + serial * 86400000;
   const d = new Date(ms);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-// Extrai o ANO de forma segura (lida com datas Date, números de série e strings)
 function yearFromDateValue(value) {
   if (value === undefined || value === null || value === "") return null;
   if (value instanceof Date) {
@@ -115,7 +120,6 @@ function yearFromDateValue(value) {
   return Number.isNaN(d.getTime()) ? null : d.getFullYear();
 }
 
-// Formata qualquer data para o padrão brasileiro DD/MM/AAAA
 function formatDateBR(value) {
   if (value === undefined || value === null || value === "" || value === "ND") return "";
 
@@ -181,7 +185,6 @@ export async function parseSpreadsheetFile(file) {
     const anoRepasse = anoRepasseColuna ?? anoDaData ?? new Date().getFullYear();
     const dataRepasseAno = anoDaData ?? anoRepasseColuna ?? anoRepasse;
 
-    // Tratamento rigoroso da Execução Física do SISMOB (ex: 14 ou 0.14 vira 14)
     let execFisicaNum = coerceNumber(r.execucaoFisica, 0);
     if (execFisicaNum > 0 && execFisicaNum <= 1) {
       execFisicaNum = Math.round(execFisicaNum * 100);
@@ -189,7 +192,6 @@ export async function parseSpreadsheetFile(file) {
       execFisicaNum = Math.round(execFisicaNum);
     }
 
-    // Tratamento da Execução do Ente
     const execEnteVal =
       r.execucaoEnte !== undefined &&
       r.execucaoEnte !== null &&
@@ -210,7 +212,6 @@ export async function parseSpreadsheetFile(file) {
       execucaoFisica: execFisicaNum,
       dataPrevistaConclusao: formatDateBR(r.dataPrevistaConclusao) || "ND",
 
-      // Informações da aba de respostas integradas
       quemFezContato: String(r.quemFezContato ?? "").trim() || "Não informado",
       dataContato: formatDateBR(r.dataContato) || String(r.dataContato ?? "").trim() || "ND",
       execucaoEnte: execEnteVal,
