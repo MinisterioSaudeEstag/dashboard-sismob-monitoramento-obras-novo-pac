@@ -1171,3 +1171,56 @@ tbody tr:hover {
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideRight { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+.table-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 8px 12px;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.table-search-icon {
+  color: var(--orange, #f7941d);
+  flex-shrink: 0;
+}
+
+.table-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: var(--text-dark, #232323);
+  background: transparent;
+}
+
+.table-search input::placeholder {
+  color: #999;
+}
+
+.table-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: #f0f0f0;
+  color: #666;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.table-search-clear:hover {
+  background: #e2e2e2;
+}
+
+.table-search-summary {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-muted, #6b7280);
+}

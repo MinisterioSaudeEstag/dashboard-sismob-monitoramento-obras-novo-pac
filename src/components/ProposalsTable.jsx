@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Info, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Info, ChevronDown, ChevronUp, Download, Search, X } from "lucide-react";
 import { exportRowsToCSV } from "../utils/spreadsheet";
 
 const PAGE_SIZE = 5;
@@ -10,9 +10,43 @@ const PRIORITY_CLASS = {
   Baixa: "badge badge-baixa",
 };
 
+function normalizarBusca(valor) {
+  return String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function linhaCasaComBusca(r, termoNormalizado) {
+  const campos = [
+    r.proposta,
+    r.municipio,
+    r.componente,
+    r.situacao,
+    r.prioridade,
+    r.anoRepasse,
+    r.dataRepasseAno,
+    r.dataPrevistaConclusao,
+  ];
+  return campos.some((campo) => normalizarBusca(campo).includes(termoNormalizado));
+}
+
 export default function ProposalsTable({ rows }) {
   const [expanded, setExpanded] = useState(false);
-  const visibleRows = expanded ? rows : rows.slice(0, PAGE_SIZE);
+  const [busca, setBusca] = useState("");
+
+  const rowsFiltradas = useMemo(() => {
+    const termo = normalizarBusca(busca).trim();
+    if (!termo) return rows;
+    return rows.filter((r) => linhaCasaComBusca(r, termo));
+  }, [rows, busca]);
+
+  const visibleRows = expanded ? rowsFiltradas : rowsFiltradas.slice(0, PAGE_SIZE);
+
+  function handleBuscaChange(valor) {
+    setBusca(valor);
+    setExpanded(false); 
+  }
 
   return (
     <div className="table-card">
@@ -20,11 +54,38 @@ export default function ProposalsTable({ rows }) {
         <h3 className="chart-title">
           Acompanhamento das propostas <Info size={14} className="info-icon" />
         </h3>
-        <button className="btn-export" onClick={() => exportRowsToCSV(rows)}>
+        <button className="btn-export" onClick={() => exportRowsToCSV(rowsFiltradas)}>
           <Download size={15} />
           Exportar CSV
         </button>
       </div>
+
+      <div className="table-search">
+        <Search size={15} className="table-search-icon" />
+        <input
+          type="text"
+          placeholder="Buscar por proposta, município, componente, situação..."
+          value={busca}
+          onChange={(e) => handleBuscaChange(e.target.value)}
+        />
+        {busca && (
+          <button
+            type="button"
+            className="table-search-clear"
+            onClick={() => handleBuscaChange("")}
+            aria-label="Limpar busca"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {busca && (
+        <div className="table-search-summary">
+          {rowsFiltradas.length}{" "}
+          {rowsFiltradas.length === 1 ? "resultado encontrado" : "resultados encontrados"} para "{busca}"
+        </div>
+      )}
 
       <div className="table-scroll">
         <table>
@@ -46,7 +107,9 @@ export default function ProposalsTable({ rows }) {
             {visibleRows.length === 0 && (
               <tr>
                 <td colSpan={10} className="empty-row">
-                  Nenhuma proposta encontrada para os filtros selecionados.
+                  {busca
+                    ? "Nenhuma proposta encontrada para essa busca."
+                    : "Nenhuma proposta encontrada para os filtros selecionados."}
                 </td>
               </tr>
             )}
@@ -70,7 +133,7 @@ export default function ProposalsTable({ rows }) {
         </table>
       </div>
 
-      {rows.length > PAGE_SIZE && (
+      {rowsFiltradas.length > PAGE_SIZE && (
         <button className="btn-ver-mais" onClick={() => setExpanded((e) => !e)}>
           {expanded ? "Ver menos" : "Ver mais"}
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
