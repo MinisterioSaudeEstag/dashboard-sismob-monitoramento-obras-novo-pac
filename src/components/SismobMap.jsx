@@ -33,6 +33,14 @@ const SismobMap = ({ dadosObrasAgrupados, onSelectMunicipio }) => {
 
         const corPino = getCorPrioridade(municipioData.prioridade);
 
+        const conclusaoMedia =
+          municipioData.conclusaoMedia ??
+          municipioData.mediaConclusao ??
+          municipioData.percentualConclusao ??
+          null;
+        const temConclusao = conclusaoMedia !== null && conclusaoMedia !== undefined;
+        const larguraBarra = temConclusao ? Math.max(0, Math.min(100, conclusaoMedia)) : 0;
+
         return (
           <Marker 
             key={index} 
@@ -54,8 +62,20 @@ const SismobMap = ({ dadosObrasAgrupados, onSelectMunicipio }) => {
                 
                 <div className="popup-conclusao" style={{ marginBottom: '15px' }}>
                    <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#666' }}>Conclusão média das obras</p>
-                   <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', color: '#333' }}>DADOS INDISPONÍVEIS</h2>
-                   <div style={{ height: '8px', background: '#e0e0e0', borderRadius: '4px' }}></div>
+                   <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', color: '#333' }}>
+                     {temConclusao ? `${conclusaoMedia}%` : 'DADOS INDISPONÍVEIS'}
+                   </h2>
+                   <div style={{ height: '8px', background: '#e0e0e0', borderRadius: '4px', overflow: 'hidden' }}>
+                     <div
+                       style={{
+                         height: '100%',
+                         width: `${larguraBarra}%`,
+                         background: '#E67E22',
+                         borderRadius: '4px',
+                         transition: 'width 0.3s ease',
+                       }}
+                     ></div>
+                   </div>
                 </div>
 
                 <p className="popup-qtd-obras" style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '10px' }}>
@@ -68,7 +88,9 @@ const SismobMap = ({ dadosObrasAgrupados, onSelectMunicipio }) => {
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }} title={obra.nomeUnidade}>
                         • {obra.nomeUnidade}
                       </span>
-                      <span style={{color: '#999', marginLeft: '10px'}}>ND</span>
+                      <span style={{ color: '#999', marginLeft: '10px', whiteSpace: 'nowrap' }}>
+                        {obra.proposta || 'N/A'}
+                      </span>
                     </li>
                   ))}
                 </ul>
