@@ -13,7 +13,7 @@ function pick(obj, ...keys) {
 }
 
 function formatarDataExibicao(valor) {
-  if (valor === undefined || valor === null || valor === '') return 'Não informada';
+  if (valor === undefined || valor === null || valor === '' || valor === 'ND') return 'Não informada';
   if (valor instanceof Date) {
     if (Number.isNaN(valor.getTime())) return 'Não informada';
     const pad = (n) => String(n).padStart(2, '0');
@@ -67,12 +67,12 @@ export default function MapaObras({ dadosPlanilha = [], opcoesFiltros }) {
       const dataContatoRaw = pick(obra, 'dataContato', 'Data do contato');
       const conclusaoEnteRaw = pick(
         obra,
-        'conclusaoInformadaEnte',
+        'conclusaoEnte',
         'Data/Previsão de conclusão informada pelo ente'
       );
       const inauguracaoEnteRaw = pick(
         obra,
-        'inauguracaoInformadaEnte',
+        'inauguracaoEnte',
         'Data/Previsão de inauguração informada pelo ente'
       );
 
