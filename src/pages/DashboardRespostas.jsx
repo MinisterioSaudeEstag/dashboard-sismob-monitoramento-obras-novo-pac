@@ -144,19 +144,24 @@ export default function DashboardRespostas({ dados, setDados }) {
     };
   }, [dadosFiltrados, dadosPendentes]);
 
-  const chartDataPendentes = useMemo(() => {
+const chartDataPendentes = useMemo(() => {
     const contagem = { Alta: 0, Média: 0, Baixa: 0 };
+    
     dadosPendentes.forEach(d => {
       const p = d.prioridadeInfo || "Média";
-      if (contagem[p] !== undefined) contagem[p]++;
-      else contagem["Média"]++; 
+      if (contagem[p] !== undefined) {
+        contagem[p]++;
+      } else {
+        contagem["Média"]++; 
+      }
     });
 
-    return [
-      { name: "Alta", value: contagem.Alta },
-      { name: "Média", value: contagem.Média },
-      { name: "Baixa", value: contagem.Baixa }
-    ].filter(item => item.value > 0);
+    const formatoDonutCard = {};
+    if (contagem.Alta > 0) formatoDonutCard["Alta"] = contagem.Alta;
+    if (contagem.Média > 0) formatoDonutCard["Média"] = contagem.Média;
+    if (contagem.Baixa > 0) formatoDonutCard["Baixa"] = contagem.Baixa;
+
+    return formatoDonutCard;
   }, [dadosPendentes]);
 
   const PRIORIDADE_COLORS = {
